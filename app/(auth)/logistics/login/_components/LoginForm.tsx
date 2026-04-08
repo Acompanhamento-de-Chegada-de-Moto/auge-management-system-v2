@@ -47,9 +47,9 @@ export function LoginForm() {
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
             <Lock className="size-5 text-primary" />
           </div>
-          <CardTitle>Acesso ao BDC</CardTitle>
+          <CardTitle>Acesso ao painel logístico</CardTitle>
           <CardDescription>
-            Digite a senha para acessar o painel de bdc
+            Digite a senha para acessar o painel de logística
           </CardDescription>
         </CardHeader>
         <CardContent>
