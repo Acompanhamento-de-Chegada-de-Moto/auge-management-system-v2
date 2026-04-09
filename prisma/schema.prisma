@@ -81,14 +81,40 @@ model Verification {
   @@map("verification")
 }
 
+model Client {
+  id          String    @id @default(uuid())
+  name        String
+  sellerName  String
+  city        String
+  billingDate DateTime?
+
+  motorcycles Motorcycle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("client")
+}
+
 model Motorcycle {
   id          String   @id @default(uuid())
   chassis     String   @unique
   model       String
   arrivalDate DateTime
 
+  registrationStatus RegistrationStatus @default(PENDING)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("motorcycle")
+}
+
+enum RegistrationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
 }

@@ -1,7 +1,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { auth } from "@/lib/auth";
+import { ClientsTable } from "./_components/ClientsTable";
+import { ClientsTableSkeleton } from "./_components/ClientsTableSkeleton";
 import { CreateClientForm } from "./_components/CreateClientForm";
 
 export default async function BdcRoute() {
@@ -37,6 +40,10 @@ export default async function BdcRoute() {
           </div>
         </div>
       </div>
+
+      <Suspense fallback={<ClientsTableSkeleton />}>
+        <ClientsTable />
+      </Suspense>
     </div>
   );
 }
