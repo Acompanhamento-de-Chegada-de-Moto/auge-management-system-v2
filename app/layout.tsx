@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Auge Management System",
+  title: "Acompanhamento de Chegada de Moto",
+  description: "Controle de chegada e status de motos da concessionaria",
 };
 
 export default function RootLayout({
