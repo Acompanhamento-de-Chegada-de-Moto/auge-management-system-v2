@@ -4,6 +4,7 @@ import { Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { parseExcelFile } from "@/lib/upload-file";
+import type { MotorcycleArrivalSchema } from "@/validators/motorcycleArrivalSchema";
 import { importMotorcycles } from "../../actions";
 
 export function Uploader() {

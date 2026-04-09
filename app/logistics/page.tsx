@@ -1,14 +1,23 @@
 import { FileSpreadsheet } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { Uploader } from "./_components/file-uploader/Uploader";
 import { ListMotorcycle } from "./_components/ListMotorcycles";
 import { RegisterMotorcycleArrivalDialog } from "./_components/RegisterMotorcycleArrivalDialog";
+import { TableSkeleton } from "./_components/TableSkeleton";
 
-export default async function LogisticsRoute() {
+export default async function LogisticsRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Number(params?.page || 1);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -56,7 +65,9 @@ export default async function LogisticsRoute() {
         </CardContent>
       </Card>
 
-      <ListMotorcycle />
+      <Suspense fallback={<TableSkeleton />}>
+        <ListMotorcycle page={page} />
+      </Suspense>
     </div>
   );
 }

@@ -5,7 +5,21 @@ import { env } from "./env";
 
 const connectionString = `${env.DATABASE_URL}`;
 
-const adapter = new PrismaPg({ connectionString });
+function getSSLValues() {
+  if (process.env.POSTGRES_CA) {
+    return {
+      ca: process.env.POSTGRES_CA,
+    };
+  }
+
+  return process.env.NODE_ENV === "production";
+}
+
+const adapter = new PrismaPg({
+  connectionString,
+  ssl: getSSLValues(),
+});
+
 const prisma = new PrismaClient({ adapter });
 
 export { prisma };
