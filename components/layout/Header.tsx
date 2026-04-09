@@ -1,12 +1,11 @@
+"use client";
+
 import { Bike } from "lucide-react";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authClient } from "@/lib/auth-client";
 import { Badge } from "../ui/badge";
 
-export async function Header() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export function Header() {
+  const { data: session } = authClient.useSession();
 
   return (
     <header className="border-b border-border bg-card">
