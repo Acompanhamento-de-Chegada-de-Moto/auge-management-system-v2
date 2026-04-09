@@ -1,3 +1,4 @@
+import { logisticsGetMotorcycles } from "@/app/data/logistics/logistics-get-motorcycles";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -7,7 +8,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { logisticsGetMotorcycles } from "@/data/logistics/logistics-get-motorcycles";
 
 export async function ListMotorcycle() {
   const data = await logisticsGetMotorcycles();

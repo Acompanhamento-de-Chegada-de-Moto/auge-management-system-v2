@@ -1,10 +1,10 @@
-import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/layout/LogoutButton";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
+import { Uploader } from "./_components/file-uploader/Uploader";
 import { ListMotorcycle } from "./_components/ListMotorcycles";
 import { RegisterMotorcycleArrivalDialog } from "./_components/RegisterMotorcycleArrivalDialog";
 
@@ -34,16 +34,7 @@ export default async function LogisticsRoute() {
         <div className="flex items-center gap-2 flex-wrap">
           <RegisterMotorcycleArrivalDialog />
 
-          <Button variant="outline" size="sm" className="cursor-pointer">
-            {false ? (
-              <Loader2 className="size-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="size-4 mr-2" />
-            )}
-            {false ? "Importando..." : "Importar Excel"}
-          </Button>
-
-          <input type="file" accept=".xlsx,.xls" className="hidden" />
+          <Uploader />
 
           <LogoutButton />
         </div>
