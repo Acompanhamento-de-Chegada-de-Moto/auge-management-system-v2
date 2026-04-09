@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/layout/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
+import { ListMotorcycle } from "./_components/ListMotorcycles";
 import { RegisterMotorcycleArrivalDialog } from "./_components/RegisterMotorcycleArrivalDialog";
 
 export default async function LogisticsRoute() {
@@ -63,6 +64,8 @@ export default async function LogisticsRoute() {
           </div>
         </CardContent>
       </Card>
+
+      <ListMotorcycle />
     </div>
   );
 }

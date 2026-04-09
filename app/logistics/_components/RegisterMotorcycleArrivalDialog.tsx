@@ -53,7 +53,6 @@ export function RegisterMotorcycleArrivalDialog() {
       if (result.status === "success") {
         form.reset();
         setIsOpen(false);
-        router.push("/");
       }
     });
   }

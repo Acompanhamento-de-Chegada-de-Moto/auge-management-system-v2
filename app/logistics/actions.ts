@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireLogistics } from "@/data/logistics/require-logistics";
 import { prisma } from "@/lib/db";
 import type { ApiResponse } from "@/lib/types";
@@ -28,6 +29,8 @@ export async function RegisterMotorcycleArrival(
         ...validation.data,
       },
     });
+
+    revalidatePath("/logistics");
 
     return {
       status: "success",
