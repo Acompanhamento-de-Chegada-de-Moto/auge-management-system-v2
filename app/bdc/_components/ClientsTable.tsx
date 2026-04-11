@@ -126,10 +126,7 @@ export async function ClientsTable() {
                       {registrationBadge(row.registrationStatus)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <ClientRowActions
-                        motorcycleId={row.motorcycleId}
-                        clientLabel={row.clientName}
-                      />
+                      <ClientRowActions row={row} />
                     </TableCell>
                   </TableRow>
                 );

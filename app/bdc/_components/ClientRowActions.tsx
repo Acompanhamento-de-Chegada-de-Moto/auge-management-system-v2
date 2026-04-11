@@ -12,14 +12,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { unlinkClientMotorcycle } from "../actions";
+import { EditClientDialog } from "./EditClientDialog";
+import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
 
 type Props = {
-  motorcycleId: string;
-  clientLabel: string;
+  row: BdcClientTableRow;
 };
 
-export function ClientRowActions({ motorcycleId, clientLabel }: Props) {
+export function ClientRowActions({ row }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ export function ClientRowActions({ motorcycleId, clientLabel }: Props) {
     setPending(true);
 
     try {
-      const result = await unlinkClientMotorcycle(motorcycleId);
+      const result = await unlinkClientMotorcycle(row.motorcycleId);
 
       if (result.status !== "success") {
         setError(result.message);
@@ -48,10 +50,10 @@ export function ClientRowActions({ motorcycleId, clientLabel }: Props) {
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground cursor-not-allowed opacity-50"
-          disabled
-          title="Editar (em breve)"
-          aria-label="Editar (em breve)"
+          className="size-8 text-muted-foreground"
+          title="Editar cliente"
+          aria-label="Editar cliente"
+          onClick={() => setEditOpen(true)}
         >
           <Pencil className="size-4" />
         </Button>
@@ -72,14 +74,16 @@ export function ClientRowActions({ motorcycleId, clientLabel }: Props) {
         </Button>
       </div>
 
+      <EditClientDialog open={editOpen} onOpenChange={setEditOpen} row={row} />
+
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Remover vínculo</DialogTitle>
             <DialogDescription>
-              O cliente <strong>{clientLabel}</strong> será desvinculado desta
-              moto. Se não houver outras motos no mesmo cliente, o cadastro do
-              cliente será excluído.
+              O cliente <strong>{row.clientName}</strong> será desvinculado
+              desta moto. Se não houver outras motos no mesmo cliente, o
+              cadastro do cliente será excluído.
             </DialogDescription>
           </DialogHeader>
 

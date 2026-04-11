@@ -148,6 +148,64 @@ export async function unlinkClientMotorcycle(
   }
 }
 
+export type UpdateClientInput = {
+  clientId: string;
+  name: string;
+  sellerName: string;
+  city: string;
+  billingDate: string | null | undefined;
+  motorcycleId: string;
+  registrationStatus: RegistrationStatus;
+};
+
+export async function updateClient(
+  input: UpdateClientInput,
+): Promise<ApiResponse> {
+  await requireBdc();
+
+  const name = input.name.trim();
+  const sellerName = input.sellerName.trim();
+  const city = input.city.trim();
+
+  if (!name || !sellerName || !city) {
+    return {
+      status: "error",
+      message: "Preencha cliente, vendedor e cidade.",
+    };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.client.update({
+        where: { id: input.clientId },
+        data: {
+          name,
+          sellerName,
+          city,
+          billingDate:
+            input.billingDate && input.billingDate.length > 0
+              ? new Date(`${input.billingDate}T12:00:00`)
+              : null,
+        },
+      });
+
+      await tx.motorcycle.update({
+        where: { id: input.motorcycleId },
+        data: {
+          registrationStatus: input.registrationStatus,
+        },
+      });
+    });
+
+    revalidatePath("/bdc");
+
+    return { status: "success", message: "Cliente atualizado com sucesso." };
+  } catch (err) {
+    console.error(err);
+    return { status: "error", message: "Erro ao atualizar cliente." };
+  }
+}
+
 export async function getMotorcycleByChassis(chassis: string) {
   await requireBdc();
 
