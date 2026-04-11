@@ -13,10 +13,11 @@ import { TableSkeleton } from "./_components/TableSkeleton";
 export default async function LogisticsRoute({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string }>;
 }) {
   const params = await searchParams;
   const page = Number(params?.page || 1);
+  const pageSize = Number(params?.pageSize || 10);
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -66,7 +67,7 @@ export default async function LogisticsRoute({
       </Card>
 
       <Suspense fallback={<TableSkeleton />}>
-        <ListMotorcycle page={page} />
+        <ListMotorcycle page={page} pageSize={pageSize} />
       </Suspense>
     </div>
   );
