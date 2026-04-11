@@ -61,7 +61,8 @@ export function PaginationControls({
     });
   }
 
-  function handlePageSizeChange(value: string) {
+  function handlePageSizeChange(value: string | null) {
+    if (!value) return;
     const newPageSize = Number(value);
     startTransition(() => {
       // Quando muda o tamanho da página, voltamos para a página 1 para evitar inconsistências
