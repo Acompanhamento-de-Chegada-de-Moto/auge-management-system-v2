@@ -3,22 +3,25 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { env } from "./env";
 
-const connectionString = `${env.DATABASE_URL}`;
+const connectionString = env.DATABASE_URL;
 
-function getSSLValues() {
+function getAdapterConfig() {
   if (process.env.POSTGRES_CA) {
     return {
-      ca: process.env.POSTGRES_CA,
+      ssl: {
+        ca: process.env.POSTGRES_CA,
+      },
     };
   }
 
-  return process.env.NODE_ENV === "production";
+  // Let the driver honor the sslmode embedded in DATABASE_URL.
+  return {};
 }
 
 const prismaClientSingleton = () => {
   const adapter = new PrismaPg({
     connectionString,
-    ssl: getSSLValues(),
+    ...getAdapterConfig(),
   });
   return new PrismaClient({ adapter });
 };
@@ -34,4 +37,3 @@ const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 export { prisma };
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
