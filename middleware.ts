@@ -3,21 +3,26 @@ import { type NextRequest, NextResponse } from "next/server";
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip authentication for login pages and public assets
-  if (
-    pathname.includes("/login") ||
+  // 1. Defina rotas públicas que NÃO precisam de autenticação
+  const isPublicRoute = 
+    pathname.includes("/login") || 
+    pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname === "/favicon.ico"
-  ) {
+    pathname.includes("/favicon.ico");
+
+  if (isPublicRoute) {
     return NextResponse.next();
   }
 
-  // Check for the session cookie directly to avoid importing Prisma in the Edge Runtime
-  const sessionToken = request.cookies.get("better-auth.session_token") || 
-                       request.cookies.get("__secure-better-auth.session_token");
+  // 2. Verificação otimista de sessão via Cookie
+  // Em produção (HTTPS), o Better Auth usa o prefixo __Secure-
+  const sessionToken = 
+    request.cookies.get("__Secure-better-auth.session_token")?.value ||
+    request.cookies.get("better-auth.session_token")?.value ||
+    request.cookies.get("__Host-better-auth.session_token")?.value;
 
   if (!sessionToken) {
+    // Redireciona conforme a área da aplicação
     if (pathname.startsWith("/bdc")) {
       return NextResponse.redirect(new URL("/bdc/login", request.url));
     }
@@ -26,10 +31,10 @@ export default async function middleware(request: NextRequest) {
     }
   }
 
-  // NOTE: Detailed role validation (BDC vs LOGISTICS) is handled 
-  // in the Server Components (requireBdc, requireLogistics) 
-  // because it requires database access which isn't available in the Edge Runtime here.
-
+  // 3. Validação de Papel (Role)
+  // IMPORTANTE: Como o middleware roda no Edge, não acessamos o banco aqui.
+  // A validação de role REAL continua acontecendo nos Server Components (requireBdc / requireLogistics).
+  
   return NextResponse.next();
 }
 
