@@ -1,4 +1,3 @@
-import ExcelJS from "exceljs";
 import type { MotorcycleArrivalSchema } from "@/validators/motorcycleArrivalSchema";
 
 type UploadResult = {
@@ -10,6 +9,8 @@ type UploadResult = {
 export async function parseExcelFile(file: File): Promise<UploadResult> {
   try {
     const buffer = await file.arrayBuffer();
+    // Load ExcelJS only when the user actually imports a spreadsheet.
+    const ExcelJS = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer);
 

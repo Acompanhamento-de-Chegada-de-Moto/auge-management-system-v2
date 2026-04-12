@@ -1,15 +1,8 @@
-import { publicGetClientStatus } from "@/app/data/bdc/bdc-get-client-rows";
-import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
 import { ClientSearchInput } from "./_components/ClientSearchInput";
-import { ClientStatusCard } from "./_components/ClientStatusCard";
+import { ClientSearchResultsList } from "./_components/ClientSearchResultsList";
+import { Suspense } from "react";
 
-export default async function Home(props: {
-  searchParams: Promise<{ search?: string }>;
-}) {
-  const searchParams = await props.searchParams;
-  const query = searchParams.search || "";
-  const results = await publicGetClientStatus(query);
-
+export default async function Home() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 px-4 py-12 md:py-20">
       <main className="max-w-4xl mx-auto flex flex-col gap-8">
@@ -22,26 +15,14 @@ export default async function Home(props: {
           </p>
         </div>
 
-        <ClientSearchInput />
+        <Suspense fallback={<div className="h-11 w-full max-w-md bg-zinc-200 animate-pulse rounded-xl" />}>
+          <ClientSearchInput />
+        </Suspense>
 
-        <div className="mt-4 flex flex-col gap-6">
-          {query.length > 0 && query.length < 3 && (
-            <p className="text-sm text-zinc-500">
-              Digite pelo menos 3 caracteres para pesquisar...
-            </p>
-          )}
-
-          {query.length >= 3 && results.length === 0 && (
-            <div className="p-8 border-2 border-dashed border-zinc-200 rounded-xl text-center">
-              <p className="text-zinc-500">
-                Nenhum resultado encontrado para &quot;{query}&quot;.
-              </p>
-            </div>
-          )}
-
-          {results.map((row) => (
-            <ClientStatusCard key={row.motorcycleId} row={row} />
-          ))}
+        <div className="mt-4">
+          <Suspense fallback={<div className="space-y-6 animate-pulse"><div className="h-40 bg-zinc-200 rounded-xl" /><div className="h-40 bg-zinc-200 rounded-xl" /></div>}>
+            <ClientSearchResultsList />
+          </Suspense>
         </div>
       </main>
     </div>

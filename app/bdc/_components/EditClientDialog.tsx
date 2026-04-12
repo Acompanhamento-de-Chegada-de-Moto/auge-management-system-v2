@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { RegistrationStatus } from "@/app/generated/prisma/enums";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

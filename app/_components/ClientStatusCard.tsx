@@ -2,7 +2,7 @@ import { Calendar, FileText, MapPin, User, Truck, ClipboardCheck } from "lucide-
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/app/bdc/_components/StatusBadge";
 import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
-import { RegistrationStatus } from "@/app/generated/prisma/enums";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR");
 

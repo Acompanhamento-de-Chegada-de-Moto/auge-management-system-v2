@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { RegistrationStatus } from "@/app/generated/prisma/enums";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
 import type { ApiResponse } from "@/lib/types";
 import { bdcGetMotorcycle } from "../data/bdc/bdc-get-motorcycle";

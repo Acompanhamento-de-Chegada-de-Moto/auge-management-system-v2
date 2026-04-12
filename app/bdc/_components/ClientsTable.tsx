@@ -1,5 +1,5 @@
 import { bdcGetClientRows } from "@/app/data/bdc/bdc-get-client-rows";
-import { RegistrationStatus } from "@/app/generated/prisma/enums";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
