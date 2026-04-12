@@ -15,11 +15,23 @@ function getSSLValues() {
   return process.env.NODE_ENV === "production";
 }
 
-const adapter = new PrismaPg({
-  connectionString,
-  ssl: getSSLValues(),
-});
+const prismaClientSingleton = () => {
+  const adapter = new PrismaPg({
+    connectionString,
+    ssl: getSSLValues(),
+  });
+  return new PrismaClient({ adapter });
+};
 
-const prisma = new PrismaClient({ adapter });
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClientSingleton | undefined;
+};
+
+const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 
 export { prisma };
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+

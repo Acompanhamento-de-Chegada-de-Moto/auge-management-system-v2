@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--max-old-space-size=4096' next dev",
     "postinstall": "prisma generate",
-    "build": "prisma migrate deploy && next build",
+    "build": "prisma migrate deploy && NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write"
