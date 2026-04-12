@@ -110,6 +110,8 @@ model Motorcycle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([createdAt])
+  @@index([updatedAt])
   @@map("motorcycle")
 }
 
