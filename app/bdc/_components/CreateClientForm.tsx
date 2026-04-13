@@ -2,6 +2,7 @@
 
 import { Loader2, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DatePicker } from "@/components/layout/DatePicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,7 +41,7 @@ function shouldShowRegistrationDate(status: string): boolean {
 function getRegistrationDateLabel(status: string): string {
   return status === "Emplacado"
     ? "Data de Emplacamento"
-    : "Data de Sa�da para Emplacamento";
+    : "Data de Saída para Emplacamento";
 }
 
 export function CreateClientForm() {
@@ -79,7 +80,7 @@ export function CreateClientForm() {
       } else if (result.data) {
         setMotorcycle(result.data);
       } else {
-        setError("Moto n�o encontrada");
+        setError("Moto não encontrada");
       }
     } catch (err) {
       console.error(err);
@@ -163,12 +164,12 @@ export function CreateClientForm() {
 
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <p className="text-sm font-medium mb-3">
-              1. Consultar chassi na log�stica
+              1. Consultar chassi na logística
             </p>
 
             <div className="flex gap-2">
               <Input
-                placeholder="Digite o n�mero do chassi"
+                placeholder="Digite o número do chassi"
                 className="font-mono"
                 maxLength={17}
                 value={chassis}
@@ -318,6 +319,7 @@ export function CreateClientForm() {
                       }
                       className="h-12"
                     />
+                    <DatePicker />
                   </div>
                 )}
               </div>

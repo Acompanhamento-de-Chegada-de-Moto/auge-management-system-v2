@@ -2,6 +2,7 @@
 
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { unlinkClientMotorcycle } from "../actions";
 import { EditClientDialog } from "./EditClientDialog";
-import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
 
 type Props = {
   row: BdcClientTableRow;
@@ -50,7 +50,7 @@ export function ClientRowActions({ row }: Props) {
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground"
+          className="size-8 text-muted-foreground cursor-pointer"
           title="Editar cliente"
           aria-label="Editar cliente"
           onClick={() => setEditOpen(true)}
@@ -62,7 +62,7 @@ export function ClientRowActions({ row }: Props) {
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
           title="Remover vínculo"
           aria-label="Remover vínculo"
           onClick={() => {
