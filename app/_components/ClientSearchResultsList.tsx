@@ -2,9 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { ClientStatusCard } from "./ClientStatusCard";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ClientStatusCard } from "./ClientStatusCard";
 
 async function fetchClientSearchResults(
   query: string,
