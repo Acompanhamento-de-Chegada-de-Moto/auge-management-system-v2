@@ -1,36 +1,36 @@
 import {
   Calendar,
+  ClipboardCheck,
   FileText,
   MapPin,
-  User,
   Truck,
-  ClipboardCheck,
+  User,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/app/bdc/_components/StatusBadge";
 import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
+import { Card, CardContent } from "@/components/ui/card";
 import { RegistrationStatus } from "@/generated/prisma/enums";
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR");
-
 export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
-  const arrivalDateFormatted = row.arrivalDate
-    ? dateFormatter.format(row.arrivalDate)
-    : "—";
-  const billingDateFormatted = row.billingDate
-    ? dateFormatter.format(row.billingDate)
-    : "—";
+  const formatDate = (date?: Date | string | null) =>
+    date
+      ? new Intl.DateTimeFormat("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(date))
+      : "—";
 
-  function getStatusLabel(status: RegistrationStatus) {
-    switch (status) {
-      case RegistrationStatus.IN_PROGRESS:
-        return "Em Emplacamento";
-      case RegistrationStatus.COMPLETED:
-        return "Concluído";
-      default:
-        return "Pendente";
-    }
-  }
+  const arrivalDateFormatted = formatDate(row.arrivalDate);
+  const billingDateFormatted = formatDate(row.billingDate);
+
+  const getStatusLabel = (status: RegistrationStatus) =>
+    (
+      ({
+        [RegistrationStatus.IN_PROGRESS]: "Em Emplacamento",
+        [RegistrationStatus.COMPLETED]: "Concluído",
+      }) as Record<string, string>
+    )[status] ?? "Pendente";
 
   function getStatusVariant(status: RegistrationStatus) {
     switch (status) {
@@ -103,7 +103,7 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
             <div className="flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-zinc-400" />
               <span className="text-sm font-medium text-zinc-600">
-                Situacao:
+                Situação:
               </span>
               <StatusBadge variant={getStatusVariant(row.registrationStatus)}>
                 {getStatusLabel(row.registrationStatus)}
