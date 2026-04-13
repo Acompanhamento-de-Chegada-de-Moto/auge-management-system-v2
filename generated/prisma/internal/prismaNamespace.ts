@@ -970,6 +970,7 @@ export const MotorcycleScalarFieldEnum = {
   model: 'model',
   arrivalDate: 'arrivalDate',
   registrationStatus: 'registrationStatus',
+  registrationStatusDate: 'registrationStatusDate',
   clientId: 'clientId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

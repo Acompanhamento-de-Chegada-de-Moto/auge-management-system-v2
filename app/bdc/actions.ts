@@ -14,7 +14,33 @@ export type CreateClientInput = {
   billingDate: string | null | undefined;
   motorcycleId: string;
   registrationStatus: RegistrationStatus;
+  registrationStatusDate: string | null | undefined;
 };
+
+function shouldTrackRegistrationDate(status: RegistrationStatus): boolean {
+  return (
+    status === RegistrationStatus.IN_PROGRESS ||
+    status === RegistrationStatus.COMPLETED
+  );
+}
+
+function parseOptionalDate(value: string | null | undefined): Date | null {
+  return value && value.length > 0 ? new Date(`${value}T12:00:00`) : null;
+}
+
+function validateRegistrationDate(
+  status: RegistrationStatus,
+  registrationStatusDate: string | null | undefined,
+): ApiResponse | null {
+  if (shouldTrackRegistrationDate(status) && !registrationStatusDate) {
+    return {
+      status: "error",
+      message: "Preencha a data do emplacamento para o status selecionado.",
+    };
+  }
+
+  return null;
+}
 
 export async function createClient(
   input: CreateClientInput,
@@ -33,15 +59,24 @@ export async function createClient(
   }
 
   if (!input.motorcycleId) {
-    return { status: "error", message: "Moto não selecionada." };
+    return { status: "error", message: "Moto n�o selecionada." };
   }
 
   const validStatuses = new Set<string>(Object.values(RegistrationStatus));
   if (!validStatuses.has(input.registrationStatus)) {
     return {
       status: "error",
-      message: "Situação de emplacamento inválida.",
+      message: "Situa��o de emplacamento inv�lida.",
     };
+  }
+
+  const registrationDateError = validateRegistrationDate(
+    input.registrationStatus,
+    input.registrationStatusDate,
+  );
+
+  if (registrationDateError) {
+    return registrationDateError;
   }
 
   try {
@@ -62,10 +97,7 @@ export async function createClient(
           name,
           sellerName,
           city,
-          billingDate:
-            input.billingDate && input.billingDate.length > 0
-              ? new Date(`${input.billingDate}T12:00:00`)
-              : null,
+          billingDate: parseOptionalDate(input.billingDate),
         },
       });
 
@@ -74,6 +106,11 @@ export async function createClient(
         data: {
           clientId: client.id,
           registrationStatus: input.registrationStatus,
+          registrationStatusDate: shouldTrackRegistrationDate(
+            input.registrationStatus,
+          )
+            ? parseOptionalDate(input.registrationStatusDate)
+            : null,
         },
       });
     });
@@ -84,12 +121,12 @@ export async function createClient(
   } catch (err) {
     if (err instanceof Error) {
       if (err.message === "MOTOR_NOT_FOUND") {
-        return { status: "error", message: "Moto não encontrada." };
+        return { status: "error", message: "Moto n�o encontrada." };
       }
       if (err.message === "MOTOR_ALREADY_LINKED") {
         return {
           status: "error",
-          message: "Esta moto já está vinculada a um cliente.",
+          message: "Esta moto j� est� vinculada a um cliente.",
         };
       }
     }
@@ -104,7 +141,7 @@ export async function unlinkClientMotorcycle(
   await requireBdc();
 
   if (!motorcycleId) {
-    return { status: "error", message: "Moto inválida." };
+    return { status: "error", message: "Moto inv�lida." };
   }
 
   try {
@@ -124,6 +161,7 @@ export async function unlinkClientMotorcycle(
         data: {
           clientId: null,
           registrationStatus: RegistrationStatus.PENDING,
+          registrationStatusDate: null,
         },
       });
 
@@ -138,13 +176,13 @@ export async function unlinkClientMotorcycle(
 
     revalidatePath("/bdc");
 
-    return { status: "success", message: "Vínculo removido." };
+    return { status: "success", message: "V�nculo removido." };
   } catch (err) {
     if (err instanceof Error && err.message === "NOT_LINKED") {
-      return { status: "error", message: "Esta moto não está vinculada." };
+      return { status: "error", message: "Esta moto n�o est� vinculada." };
     }
 
-    return { status: "error", message: "Erro ao remover vínculo." };
+    return { status: "error", message: "Erro ao remover v�nculo." };
   }
 }
 
@@ -156,6 +194,7 @@ export type UpdateClientInput = {
   billingDate: string | null | undefined;
   motorcycleId: string;
   registrationStatus: RegistrationStatus;
+  registrationStatusDate: string | null | undefined;
 };
 
 export async function updateClient(
@@ -174,6 +213,15 @@ export async function updateClient(
     };
   }
 
+  const registrationDateError = validateRegistrationDate(
+    input.registrationStatus,
+    input.registrationStatusDate,
+  );
+
+  if (registrationDateError) {
+    return registrationDateError;
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.client.update({
@@ -182,10 +230,7 @@ export async function updateClient(
           name,
           sellerName,
           city,
-          billingDate:
-            input.billingDate && input.billingDate.length > 0
-              ? new Date(`${input.billingDate}T12:00:00`)
-              : null,
+          billingDate: parseOptionalDate(input.billingDate),
         },
       });
 
@@ -193,6 +238,11 @@ export async function updateClient(
         where: { id: input.motorcycleId },
         data: {
           registrationStatus: input.registrationStatus,
+          registrationStatusDate: shouldTrackRegistrationDate(
+            input.registrationStatus,
+          )
+            ? parseOptionalDate(input.registrationStatusDate)
+            : null,
         },
       });
     });
@@ -214,7 +264,7 @@ export async function getMotorcycleByChassis(chassis: string) {
   if (!data) {
     return {
       status: "error",
-      message: "Moto não encontrada",
+      message: "Moto n�o encontrada",
     };
   }
 

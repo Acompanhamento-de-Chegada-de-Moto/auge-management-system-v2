@@ -103,6 +103,7 @@ model Motorcycle {
   arrivalDate DateTime
 
   registrationStatus RegistrationStatus @default(PENDING)
+  registrationStatusDate DateTime?
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id])
@@ -120,3 +121,4 @@ enum RegistrationStatus {
   IN_PROGRESS
   COMPLETED
 }
+
