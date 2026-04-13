@@ -96,11 +96,20 @@ export async function publicGetClientStatus(
       sellerName: client.sellerName,
       city: client.city,
       model: m.model,
-      chassis: m.chassis,
+      chassis: maskChassis(m.chassis),
       billingDate: client.billingDate,
       arrivalDate: m.arrivalDate,
       registrationStatus: m.registrationStatus,
       registrationStatusDate: m.registrationStatusDate,
     };
   });
+}
+
+export function maskChassis(chassis: string): string {
+  if (!chassis) return "";
+
+  const visible = chassis.slice(-6);
+  const masked = "*".repeat(Math.max(0, chassis.length - 6));
+
+  return masked + visible;
 }

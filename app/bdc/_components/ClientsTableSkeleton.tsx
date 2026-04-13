@@ -54,7 +54,7 @@ export function ClientsTableSkeleton() {
               <TableRow key={rowKey}>
                 {SKELETON_COL_KEYS.map((colKey) => (
                   <TableCell key={`${rowKey}-${colKey}`}>
-                    <Skeleton className="h-4 w-full max-w-[120px]" />
+                    <Skeleton className="h-4 w-full max-w-30" />
                   </TableCell>
                 ))}
               </TableRow>

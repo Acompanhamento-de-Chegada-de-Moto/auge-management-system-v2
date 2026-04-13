@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { publicGetClientStatus } from "@/app/data/bdc/bdc-get-client-rows";
 
 export async function GET(req: NextRequest) {
@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
     const results = await publicGetClientStatus(query);
     return NextResponse.json(results);
   } catch (error) {
-    console.error("Search error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
