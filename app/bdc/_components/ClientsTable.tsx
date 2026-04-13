@@ -1,5 +1,4 @@
 import { bdcGetClientRows } from "@/app/data/bdc/bdc-get-client-rows";
-import { RegistrationStatus } from "@/generated/prisma/enums";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -9,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 import { ClientRowActions } from "./ClientRowActions";
 import { StatusBadge } from "./StatusBadge";
 
@@ -72,7 +72,7 @@ export async function ClientsTable() {
               <TableHead className="font-semibold text-foreground">
                 Situação
               </TableHead>
-              <TableHead className="w-[100px] text-right font-semibold text-foreground">
+              <TableHead className="w-25 text-right font-semibold text-foreground">
                 Ações
               </TableHead>
             </TableRow>
@@ -100,7 +100,7 @@ export async function ClientsTable() {
                     <TableCell>{row.city}</TableCell>
                     <TableCell>{row.model}</TableCell>
                     <TableCell
-                      className="max-w-[200px] truncate font-mono text-xs"
+                      className="max-w-50 truncate font-mono text-xs"
                       title={row.chassis}
                     >
                       {row.chassis}
