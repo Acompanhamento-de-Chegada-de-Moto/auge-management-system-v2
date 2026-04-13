@@ -15,12 +15,23 @@ export default async function Home() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="h-11 w-full max-w-md bg-zinc-200 animate-pulse rounded-xl" />}>
+        <Suspense
+          fallback={
+            <div className="h-11 w-full max-w-md bg-zinc-200 animate-pulse rounded-xl" />
+          }
+        >
           <ClientSearchInput />
         </Suspense>
 
         <div className="mt-4">
-          <Suspense fallback={<div className="space-y-6 animate-pulse"><div className="h-40 bg-zinc-200 rounded-xl" /><div className="h-40 bg-zinc-200 rounded-xl" /></div>}>
+          <Suspense
+            fallback={
+              <div className="space-y-6 animate-pulse">
+                <div className="h-40 bg-zinc-200 rounded-xl" />
+                <div className="h-40 bg-zinc-200 rounded-xl" />
+              </div>
+            }
+          >
             <ClientSearchResultsList />
           </Suspense>
         </div>

@@ -9,21 +9,26 @@ export function ClientSearchInput() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [value, setValue] = useState(searchParams.get("search")?.toString() || "");
+  const [value, setValue] = useState(
+    searchParams.get("search")?.toString() || "",
+  );
 
-  const updateUrl = useCallback((term: string) => {
-    const params = new URLSearchParams(window.location.search);
-    if (term) {
-      params.set("search", term);
-    } else {
-      params.delete("search");
-    }
+  const updateUrl = useCallback(
+    (term: string) => {
+      const params = new URLSearchParams(window.location.search);
+      if (term) {
+        params.set("search", term);
+      } else {
+        params.delete("search");
+      }
 
-    startTransition(() => {
-      // Usamos replace para evitar poluir o histórico durante a digitação
-      router.replace(`/?${params.toString()}`, { scroll: false });
-    });
-  }, [router]);
+      startTransition(() => {
+        // Usamos replace para evitar poluir o histórico durante a digitação
+        router.replace(`/?${params.toString()}`, { scroll: false });
+      });
+    },
+    [router],
+  );
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -47,7 +52,7 @@ export function ClientSearchInput() {
         onChange={(e) => setValue(e.target.value)}
         className="pl-10 h-11 rounded-xl border-zinc-300 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500"
       />
-      {(isPending) && (
+      {isPending && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>

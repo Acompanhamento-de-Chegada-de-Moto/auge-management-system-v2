@@ -52,9 +52,14 @@ export async function ListMotorcycle({ page, pageSize }: Props) {
                 </TableRow>
               ) : (
                 data.map((e) => (
-                  <TableRow key={e.id} className="hover:bg-muted/30 border-b border-border transition-colors">
+                  <TableRow
+                    key={e.id}
+                    className="hover:bg-muted/30 border-b border-border transition-colors"
+                  >
                     <CopyToClipboard chassis={e.chassis} />
-                    <TableCell className="font-medium align-middle">{e.model}</TableCell>
+                    <TableCell className="font-medium align-middle">
+                      {e.model}
+                    </TableCell>
                     <TableCell className="text-right text-muted-foreground text-sm align-middle">
                       {new Intl.DateTimeFormat("pt-BR").format(
                         new Date(e.arrivalDate),

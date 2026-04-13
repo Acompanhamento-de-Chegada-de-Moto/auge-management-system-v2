@@ -4,8 +4,8 @@ export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Defina rotas públicas que NÃO precisam de autenticação
-  const isPublicRoute = 
-    pathname.includes("/login") || 
+  const isPublicRoute =
+    pathname.includes("/login") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname.includes("/favicon.ico");
@@ -16,7 +16,7 @@ export default async function middleware(request: NextRequest) {
 
   // 2. Verificação otimista de sessão via Cookie
   // Em produção (HTTPS), o Better Auth usa o prefixo __Secure-
-  const sessionToken = 
+  const sessionToken =
     request.cookies.get("__Secure-better-auth.session_token")?.value ||
     request.cookies.get("better-auth.session_token")?.value ||
     request.cookies.get("__Host-better-auth.session_token")?.value;
@@ -34,7 +34,7 @@ export default async function middleware(request: NextRequest) {
   // 3. Validação de Papel (Role)
   // IMPORTANTE: Como o middleware roda no Edge, não acessamos o banco aqui.
   // A validação de role REAL continua acontecendo nos Server Components (requireBdc / requireLogistics).
-  
+
   return NextResponse.next();
 }
 

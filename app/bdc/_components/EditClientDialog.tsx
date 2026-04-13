@@ -133,7 +133,11 @@ export function EditClientDialog({ open, onOpenChange, row }: Props) {
             {/* Modelo */}
             <div className="flex flex-col gap-2">
               <Label className="text-sm">Modelo</Label>
-              <Input value={row.model} disabled className="bg-muted font-mono" />
+              <Input
+                value={row.model}
+                disabled
+                className="bg-muted font-mono"
+              />
             </div>
 
             {/* Chassi */}

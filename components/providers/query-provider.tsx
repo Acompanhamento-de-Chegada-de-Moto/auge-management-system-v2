@@ -32,7 +32,7 @@ function getQueryClient() {
 }
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  // NOTA: Evite usar useState aqui para o QueryClient, pois isso pode causar 
+  // NOTA: Evite usar useState aqui para o QueryClient, pois isso pode causar
   // problemas de hidratação no Next.js App Router se não for tratado com cuidado.
   const queryClient = getQueryClient();
 

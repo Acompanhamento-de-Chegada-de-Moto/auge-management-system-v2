@@ -1,4 +1,11 @@
-import { Calendar, FileText, MapPin, User, Truck, ClipboardCheck } from "lucide-react";
+import {
+  Calendar,
+  FileText,
+  MapPin,
+  User,
+  Truck,
+  ClipboardCheck,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/app/bdc/_components/StatusBadge";
 import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
@@ -7,8 +14,12 @@ import { RegistrationStatus } from "@/generated/prisma/enums";
 const dateFormatter = new Intl.DateTimeFormat("pt-BR");
 
 export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
-  const arrivalDateFormatted = row.arrivalDate ? dateFormatter.format(row.arrivalDate) : "—";
-  const billingDateFormatted = row.billingDate ? dateFormatter.format(row.billingDate) : "—";
+  const arrivalDateFormatted = row.arrivalDate
+    ? dateFormatter.format(row.arrivalDate)
+    : "—";
+  const billingDateFormatted = row.billingDate
+    ? dateFormatter.format(row.billingDate)
+    : "—";
 
   function getStatusLabel(status: RegistrationStatus) {
     switch (status) {
@@ -39,7 +50,9 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
         <div className="flex-1 p-6 space-y-6">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-zinc-900">{row.clientName}</h3>
+              <h3 className="text-xl font-bold text-zinc-900">
+                {row.clientName}
+              </h3>
               <p className="text-sm text-zinc-500">{row.model}</p>
             </div>
             <StatusBadge variant={getStatusVariant(row.registrationStatus)}>
@@ -76,7 +89,9 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-600">Chegada:</span>
+              <span className="text-sm font-medium text-zinc-600">
+                Chegada:
+              </span>
               <StatusBadge variant="success">Chegou</StatusBadge>
             </div>
             <p className="text-xs text-zinc-500 pl-6">
@@ -87,7 +102,9 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-600">Situacao:</span>
+              <span className="text-sm font-medium text-zinc-600">
+                Situacao:
+              </span>
               <StatusBadge variant={getStatusVariant(row.registrationStatus)}>
                 {getStatusLabel(row.registrationStatus)}
               </StatusBadge>
