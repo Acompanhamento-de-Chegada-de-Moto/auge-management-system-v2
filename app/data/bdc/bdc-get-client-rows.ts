@@ -14,6 +14,7 @@ export type BdcClientTableRow = {
   billingDate: Date | null;
   arrivalDate: Date;
   registrationStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  registrationStatusDate: Date | null;
 };
 
 export async function bdcGetClientRows(): Promise<BdcClientTableRow[]> {
@@ -44,6 +45,7 @@ export async function bdcGetClientRows(): Promise<BdcClientTableRow[]> {
       billingDate: client.billingDate,
       arrivalDate: m.arrivalDate,
       registrationStatus: m.registrationStatus,
+      registrationStatusDate: m.registrationStatusDate,
     };
   });
 }
@@ -98,6 +100,7 @@ export async function publicGetClientStatus(
       billingDate: client.billingDate,
       arrivalDate: m.arrivalDate,
       registrationStatus: m.registrationStatus,
+      registrationStatusDate: m.registrationStatusDate,
     };
   });
 }
