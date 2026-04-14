@@ -18,7 +18,6 @@ import { authClient } from "@/lib/auth-client";
 import { env } from "@/lib/env";
 import { type LoginInputType, loginSchema } from "@/lib/zodSchemas";
 export function LoginForm() {
-  const router = useRouter();
   const [emailAndPasswordPending, startEmailAndPasswordTransition] =
     useTransition();
 
