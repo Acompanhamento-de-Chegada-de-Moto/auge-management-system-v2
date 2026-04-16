@@ -3,8 +3,8 @@
 import { Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { parseExcelFile } from "@/lib/upload-file";
-import { importMotorcycles } from "../../actions";
+import { parseExcelFile } from "@/lib/upload-clients";
+import { importClients } from "../../actions";
 
 export function Uploader() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +28,7 @@ export function Uploader() {
         return;
       }
 
-      const response = await importMotorcycles(result.data!);
+      const response = await importClients(result.data!);
 
       if (response.status === "error") {
         alert(response.message);

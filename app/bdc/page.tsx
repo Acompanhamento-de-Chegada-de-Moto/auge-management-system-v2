@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { ClientsTable } from "./_components/ClientsTable";
 import { ClientsTableSkeleton } from "./_components/ClientsTableSkeleton";
 import { CreateClientForm } from "./_components/CreateClientForm";
+import { Uploader } from "./_components/file-uploader/Uploader";
 
 export default async function BdcRoute() {
   const session = await auth.api.getSession({
@@ -35,6 +36,8 @@ export default async function BdcRoute() {
 
           <div className="flex items-center gap-2">
             <CreateClientForm />
+
+            <Uploader />
 
             <LogoutButton />
           </div>
