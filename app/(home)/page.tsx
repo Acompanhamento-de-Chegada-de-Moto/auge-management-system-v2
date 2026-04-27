@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { ClientSearchInput } from "../_components/ClientSearchInput";
-import { ClientSearchResultsList } from "../_components/ClientSearchResultsList";
+import { ClientSearchInput } from "./_components/ClientSearchInput";
+import { ClientSearchResultsList } from "./_components/ClientSearchResultsList";
 
 export default async function Home() {
   return (

@@ -36,8 +36,14 @@ function hasArrived(arrivalDate: Date) {
   return arrival <= today;
 }
 
-export async function ClientsTable() {
-  const rows = await bdcGetClientRows();
+export async function ClientsTable({
+  searchParams,
+}: {
+  searchParams: { search?: string };
+}) {
+  const query = searchParams.search?.trim() || undefined;
+
+  const rows = await bdcGetClientRows(query);
 
   return (
     <Card className="rounded-lg border border-border shadow-sm">

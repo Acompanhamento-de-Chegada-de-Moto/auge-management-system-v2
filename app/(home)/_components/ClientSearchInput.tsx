@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition, useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 
 export function ClientSearchInput() {
@@ -23,7 +23,6 @@ export function ClientSearchInput() {
       }
 
       startTransition(() => {
-        // Usamos replace para evitar poluir o histórico durante a digitação
         router.replace(`/?${params.toString()}`, { scroll: false });
       });
     },
@@ -35,7 +34,7 @@ export function ClientSearchInput() {
       if (value !== (searchParams.get("search") || "")) {
         updateUrl(value);
       }
-    }, 400); // 400ms debounce
+    }, 400);
 
     return () => clearTimeout(timeoutId);
   }, [value, updateUrl, searchParams]);
