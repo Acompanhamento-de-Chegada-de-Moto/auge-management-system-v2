@@ -17,11 +17,31 @@ export type BdcClientTableRow = {
   registrationStatusDate: Date | null;
 };
 
-export async function bdcGetClientRows(): Promise<BdcClientTableRow[]> {
+export async function bdcGetClientRows(query?: string): Promise<BdcClientTableRow[]> {
   await requireBdc();
 
   const motorcycles = await prisma.motorcycle.findMany({
-    where: { clientId: { not: null } },
+    where: {
+      clientId: { not: null },
+      ...(query && {
+        OR: [
+          {
+            chassis: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+          {
+            client: {
+              name: {
+                contains: query,
+                mode: "insensitive",
+              },
+            },
+          },
+        ],
+      }),
+    },
     orderBy: { updatedAt: "desc" },
     include: {
       client: true,
@@ -49,6 +69,7 @@ export async function bdcGetClientRows(): Promise<BdcClientTableRow[]> {
     };
   });
 }
+
 
 export async function publicGetClientStatus(
   query: string,

@@ -33,9 +33,13 @@ function validateRegistrationDate(
   registrationStatusDate: string | null | undefined,
 ): ApiResponse | null {
   if (shouldTrackRegistrationDate(status) && !registrationStatusDate) {
+    const messageError = status === RegistrationStatus.IN_PROGRESS
+      ? "Preencha a data de saída para emplacamento."
+      : "Preencha a data de emplacamento.";
+      
     return {
       status: "error",
-      message: "Preencha a data do emplacamento para o status selecionado.",
+      message: messageError,
     };
   }
 

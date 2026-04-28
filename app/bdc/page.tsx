@@ -6,8 +6,15 @@ import { auth } from "@/lib/auth";
 import { ClientsTable } from "./_components/ClientsTable";
 import { ClientsTableSkeleton } from "./_components/ClientsTableSkeleton";
 import { CreateClientForm } from "./_components/CreateClientForm";
+import { SearchInput } from "./_components/SearchInput";
 
-export default async function BdcRoute() {
+export default async function BdcRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const resolved = await searchParams;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -34,6 +41,8 @@ export default async function BdcRoute() {
           </div>
 
           <div className="flex items-center gap-2">
+            <SearchInput />
+
             <CreateClientForm />
 
             <LogoutButton />
@@ -42,7 +51,7 @@ export default async function BdcRoute() {
       </div>
 
       <Suspense fallback={<ClientsTableSkeleton />}>
-        <ClientsTable />
+        <ClientsTable searchParams={resolved} />
       </Suspense>
     </div>
   );

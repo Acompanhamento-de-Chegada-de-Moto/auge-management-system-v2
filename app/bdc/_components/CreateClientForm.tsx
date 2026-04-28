@@ -78,12 +78,16 @@ export function CreateClientForm() {
       if (result.status !== "success") {
         setError(result.message);
       } else if (result.data) {
+        if (!hasArrived(result.data.arrivalDate)) {
+          setError("Moto encontrada, mas ainda não chegou na loja");
+          return;
+        }
+
         setMotorcycle(result.data);
       } else {
         setError("Moto não encontrada");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Erro ao buscar moto");
     } finally {
       setIsLoadingMotorcycle(false);
@@ -135,6 +139,18 @@ export function CreateClientForm() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function hasArrived(arrivalDate?: Date | string | null): boolean {
+    if (!arrivalDate) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const arrival = new Date(arrivalDate);
+    arrival.setHours(0, 0, 0, 0);
+
+    return arrival <= today;
   }
 
   return (
@@ -196,7 +212,7 @@ export function CreateClientForm() {
               </Button>
             </div>
 
-            {motorcycle && (
+            {motorcycle && hasArrived(motorcycle.arrivalDate) && (
               <div className="mt-3 text-sm text-green-600">
                 Moto encontrada: <strong>{motorcycle.model}</strong>
               </div>
@@ -205,7 +221,7 @@ export function CreateClientForm() {
             {error && <div className="mt-3 text-sm text-red-500">{error}</div>}
           </div>
 
-          {motorcycle && (
+          {motorcycle && hasArrived(motorcycle.arrivalDate) && (
             <div className="rounded-lg border border-border p-4">
               <p className="text-sm font-medium mb-3">
                 2. Preencher dados do cliente
@@ -273,16 +289,29 @@ export function CreateClientForm() {
                   <Label className="text-sm">Status de Chegada</Label>
                   <div className="flex h-12 items-center gap-2 rounded-lg border border-input bg-muted/40 px-3 text-sm">
                     {motorcycle.arrivalDate ? (
-                      <>
-                        <span className="font-medium text-emerald-600">
-                          Chegou
-                        </span>
-                        <span className="ml-auto text-sm text-muted-foreground">
-                          {new Intl.DateTimeFormat("pt-BR").format(
-                            new Date(motorcycle.arrivalDate),
-                          )}
-                        </span>
-                      </>
+                      hasArrived(motorcycle.arrivalDate) ? (
+                        <>
+                          <span className="font-medium text-emerald-600">
+                            Chegou
+                          </span>
+                          <span className="ml-auto text-sm text-muted-foreground">
+                            {new Intl.DateTimeFormat("pt-BR").format(
+                              new Date(motorcycle.arrivalDate),
+                            )}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-amber-600 font-medium">
+                            Não chegou
+                          </span>
+                          <span className="ml-auto text-sm text-muted-foreground">
+                            {new Intl.DateTimeFormat("pt-BR").format(
+                              new Date(motorcycle.arrivalDate),
+                            )}
+                          </span>
+                        </>
+                      )
                     ) : (
                       <span className="text-muted-foreground">Aguardando</span>
                     )}

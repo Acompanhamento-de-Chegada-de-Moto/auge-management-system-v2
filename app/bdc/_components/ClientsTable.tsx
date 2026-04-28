@@ -19,7 +19,7 @@ function registrationBadge(status: RegistrationStatus) {
     case RegistrationStatus.IN_PROGRESS:
       return <StatusBadge variant="warning">Em emplacamento</StatusBadge>;
     case RegistrationStatus.COMPLETED:
-      return <StatusBadge variant="success">Concluído</StatusBadge>;
+      return <StatusBadge variant="success">Emplacado</StatusBadge>;
     default:
       return <StatusBadge variant="neutral">Pendente</StatusBadge>;
   }
@@ -36,8 +36,12 @@ function hasArrived(arrivalDate: Date) {
   return arrival <= today;
 }
 
-export async function ClientsTable() {
-  const rows = await bdcGetClientRows();
+export async function ClientsTable({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
+  const rows = await bdcGetClientRows(searchParams.q);
 
   return (
     <Card className="rounded-lg border border-border shadow-sm">
