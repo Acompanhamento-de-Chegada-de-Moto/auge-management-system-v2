@@ -39,9 +39,9 @@ function hasArrived(arrivalDate: Date) {
 export async function ClientsTable({
   searchParams,
 }: {
-  searchParams: { search?: string };
+  searchParams: { q?: string };
 }) {
-  const query = searchParams.search?.trim() || undefined;
+  const query = searchParams.q?.trim() || undefined;
 
   const rows = await bdcGetClientRows(query);
 
