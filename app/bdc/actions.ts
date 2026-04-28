@@ -317,7 +317,7 @@ export async function updateClient(
   }
 }
 
-export async function getMotorcycleByChassis(chassis: string) {
+export async function FetchMotorcycleByChassis(chassis: string) {
   await requireBdc();
 
   const data = await bdcGetMotorcycle({ chassis });
@@ -325,7 +325,7 @@ export async function getMotorcycleByChassis(chassis: string) {
   if (!data) {
     return {
       status: "error",
-      message: "Moto não encontrada",
+      message: "Moto não encontrada, verifique o chassi na logística.",
     };
   }
 

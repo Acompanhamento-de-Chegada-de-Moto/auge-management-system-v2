@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ToastContainer } from "react-toastify";
 import { Header } from "@/components/layout/Header";
 import { NavLinks } from "@/components/layout/NavLinks";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -37,14 +38,14 @@ export default function RootLayout({
               <NavLinks />
             </div>
             {children}
-            {/* <ToastContainer
+            <ToastContainer
               position="top-right"
               autoClose={3000}
               hideProgressBar={false}
               newestOnTop
               closeOnClick
               pauseOnHover
-            /> */}
+            />
           </main>
         </QueryProvider>
       </body>

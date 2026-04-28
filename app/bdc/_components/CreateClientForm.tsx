@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Plus, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { DatePicker } from "@/components/layout/DatePicker";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistrationStatus } from "@/generated/prisma/enums";
-import { createClient, getMotorcycleByChassis } from "../actions";
+import { notify } from "@/lib/notify";
+import { tryCatch } from "@/lib/tryCatch";
+import { createClient, FetchMotorcycleByChassis } from "../actions";
 
 type MotorcyclePreview = {
   id: string;
@@ -46,7 +48,6 @@ function getRegistrationDateLabel(status: string): string {
 
 export function CreateClientForm() {
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isLoadingMotorcycle, setIsLoadingMotorcycle] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientName, setClientName] = useState("");
   const [sellerName, setSellerName] = useState("");
@@ -58,6 +59,7 @@ export function CreateClientForm() {
   const [motorcycle, setMotorcycle] = useState<MotorcyclePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!shouldShowRegistrationDate(plateStatus)) {
@@ -68,30 +70,29 @@ export function CreateClientForm() {
   async function handleSearch() {
     if (!chassis) return;
 
-    setIsLoadingMotorcycle(true);
     setError(null);
     setMotorcycle(null);
 
-    try {
-      const result = await getMotorcycleByChassis(chassis);
+    startTransition(async () => {
+      const { data: result, error } = await tryCatch(
+        FetchMotorcycleByChassis(chassis),
+      );
 
-      if (result.status !== "success") {
-        setError(result.message);
-      } else if (result.data) {
-        if (!hasArrived(result.data.arrivalDate)) {
-          setError("Moto encontrada, mas ainda não chegou na loja");
-          return;
-        }
-
-        setMotorcycle(result.data);
-      } else {
-        setError("Moto não encontrada");
+      if (error) {
+        notify.error("Erro ao buscar moto. Tente novamente.");
+        return;
       }
-    } catch {
-      setError("Erro ao buscar moto");
-    } finally {
-      setIsLoadingMotorcycle(false);
-    }
+
+      if (result.status === "error") {
+        notify.warning(result?.message);
+        return;
+      }
+
+      if (result.status === "success") {
+        setMotorcycle(result?.data!);
+        return;
+      }
+    });
   }
 
   function resetForm() {
@@ -196,9 +197,9 @@ export function CreateClientForm() {
                 variant="secondary"
                 className="w-32 cursor-pointer"
                 onClick={handleSearch}
-                disabled={isLoadingMotorcycle}
+                disabled={isPending}
               >
-                {isLoadingMotorcycle ? (
+                {isPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="size-4 animate-spin" />
                     Buscando
