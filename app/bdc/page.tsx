@@ -6,7 +6,6 @@ import { auth } from "@/lib/auth";
 import { ClientsTable } from "./_components/ClientsTable";
 import { ClientsTableSkeleton } from "./_components/ClientsTableSkeleton";
 import { CreateClientForm } from "./_components/CreateClientForm";
-import { SearchInput } from "./_components/SearchInput";
 
 export default async function BdcRoute({
   searchParams,
@@ -44,6 +43,8 @@ export default async function BdcRoute({
             <SearchInput />
 
             <CreateClientForm />
+
+            <Uploader />
 
             <LogoutButton />
           </div>

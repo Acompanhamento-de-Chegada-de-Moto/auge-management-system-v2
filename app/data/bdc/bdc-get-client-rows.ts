@@ -80,7 +80,6 @@ export async function publicGetClientStatus(
 
   const motorcycles = await prisma.motorcycle.findMany({
     where: {
-      clientId: { not: null },
       OR: [
         {
           client: {

@@ -9,6 +9,14 @@ import {
   motorcycleArrivalSchema,
 } from "@/validators/motorcycleArrivalSchema";
 
+function parseSafeDate(date: string | Date): Date {
+  if (date instanceof Date) return date;
+
+  const [year, month, day] = date.split("-").map(Number);
+
+  return new Date(year, month - 1, day, 12, 0, 0);
+}
+
 export async function RegisterMotorcycleArrival(
   values: MotorcycleArrivalSchema,
 ): Promise<ApiResponse> {
@@ -27,6 +35,7 @@ export async function RegisterMotorcycleArrival(
     await prisma.motorcycle.create({
       data: {
         ...validation.data,
+        arrivalDate: parseSafeDate(validation.data.arrivalDate),
       },
     });
 
@@ -34,9 +43,11 @@ export async function RegisterMotorcycleArrival(
 
     return {
       status: "success",
-      message: "Course created successfully",
+      message: "Motorcycle created successfully",
     };
-  } catch {
+  } catch (error) {
+    console.error(error);
+
     return {
       status: "error",
       message: "Failed to register a new motorcycle",
@@ -61,7 +72,7 @@ export async function importMotorcycles(
       data: data.map((item) => ({
         chassis: item.chassis,
         model: item.model,
-        arrivalDate: new Date(item.arrivalDate),
+        arrivalDate: parseSafeDate(item.arrivalDate),
       })),
       skipDuplicates: true,
     });
