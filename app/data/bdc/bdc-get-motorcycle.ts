@@ -1,5 +1,4 @@
 import "server-only";
-import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireBdc } from "./require-bdc";
 
@@ -17,10 +16,6 @@ export async function bdcGetMotorcycle({ chassis }: { chassis: string }) {
       arrivalDate: true,
     },
   });
-
-  if (!data) {
-    return notFound();
-  }
 
   return data;
 }

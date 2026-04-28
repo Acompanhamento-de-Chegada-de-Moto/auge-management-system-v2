@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistrationStatus } from "@/generated/prisma/enums";
+import { notify } from "@/lib/notify";
 import { updateClient } from "../actions";
 
 type Props = {
@@ -130,14 +131,15 @@ export function EditClientDialog({ open, onOpenChange, row }: Props) {
       });
 
       if (result.status !== "success") {
-        setSubmitError(result.message);
+        notify.error(result.message || "Erro ao atualizar cliente");
         return;
       }
 
+      notify.success;
       onOpenChange(false);
     } catch (err) {
       console.error(err);
-      setSubmitError("Erro ao atualizar cliente");
+      notify.error("Erro ao atualizar cliente");
     } finally {
       setIsSubmitting(false);
     }
