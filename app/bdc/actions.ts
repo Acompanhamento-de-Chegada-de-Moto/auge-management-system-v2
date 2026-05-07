@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { RegistrationStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
+import { getClientIp } from "@/lib/get-client-ip";
+import { rateLimit } from "@/lib/rate-limit";
 import type { ApiResponse } from "@/lib/types";
 import type { ClientSchema } from "@/validators/clientSchema";
+import { clientSchema } from "@/validators/clientSchema";
 import { bdcGetMotorcycle } from "../data/bdc/bdc-get-motorcycle";
 import { requireBdc } from "../data/bdc/require-bdc";
 
@@ -16,6 +19,7 @@ export type CreateClientInput = {
   motorcycleId: string;
   registrationStatus: RegistrationStatus;
   registrationStatusDate: string | null | undefined;
+  arrivalDate: string | null | undefined;
 };
 
 export type UpdateClientInput = {
@@ -27,6 +31,7 @@ export type UpdateClientInput = {
   motorcycleId: string;
   registrationStatus: RegistrationStatus;
   registrationStatusDate: string | null | undefined;
+  arrivalDate: string | null | undefined;
 };
 
 function shouldTrackRegistrationDate(status: RegistrationStatus): boolean {
@@ -73,15 +78,23 @@ function parseOptionalDate(
   );
 }
 
+function parseRequiredDate(
+  value: string | Date | null | undefined,
+): Date | undefined {
+  const result = parseOptionalDate(value);
+  return result ?? undefined;
+}
+
 function validateRegistrationDate(
   status: RegistrationStatus,
   registrationStatusDate: string | null | undefined,
 ): ApiResponse | null {
   if (shouldTrackRegistrationDate(status) && !registrationStatusDate) {
-    const messageError = status === RegistrationStatus.IN_PROGRESS
-      ? "Preencha a data de saída para emplacamento."
-      : "Preencha a data de emplacamento.";
-      
+    const messageError =
+      status === RegistrationStatus.IN_PROGRESS
+        ? "Preencha a data de saída para emplacamento."
+        : "Preencha a data de emplacamento.";
+
     return {
       status: "error",
       message: messageError,
@@ -95,6 +108,19 @@ export async function createClient(
   input: CreateClientInput,
 ): Promise<ApiResponse> {
   await requireBdc();
+
+  const ip = await getClientIp();
+  const limit = rateLimit({
+    identifier: `bdc:create:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limit.success) {
+    return {
+      status: "error",
+      message: "Muitas requisições. Aguarde um momento.",
+    };
+  }
 
   const name = input.name.trim();
   const sellerName = input.sellerName.trim();
@@ -151,6 +177,8 @@ export async function createClient(
         },
       });
 
+      const arrivalDate = parseRequiredDate(input.arrivalDate);
+
       await tx.motorcycle.update({
         where: { id: input.motorcycleId },
         data: {
@@ -161,6 +189,7 @@ export async function createClient(
           )
             ? parseOptionalDate(input.registrationStatusDate)
             : null,
+          ...(arrivalDate ? { arrivalDate } : {}),
         },
       });
     });
@@ -193,6 +222,19 @@ export async function unlinkClientMotorcycle(
   motorcycleId: string,
 ): Promise<ApiResponse> {
   await requireBdc();
+
+  const ip = await getClientIp();
+  const limit = rateLimit({
+    identifier: `bdc:unlink:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limit.success) {
+    return {
+      status: "error",
+      message: "Muitas requisições. Aguarde um momento.",
+    };
+  }
 
   if (!motorcycleId) {
     return { status: "error", message: "Moto inválida." };
@@ -256,6 +298,19 @@ export async function updateClient(
 ): Promise<ApiResponse> {
   await requireBdc();
 
+  const ip = await getClientIp();
+  const limit = rateLimit({
+    identifier: `bdc:update:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limit.success) {
+    return {
+      status: "error",
+      message: "Muitas requisições. Aguarde um momento.",
+    };
+  }
+
   const name = input.name.trim();
   const sellerName = input.sellerName.trim();
   const city = input.city.trim();
@@ -278,6 +333,15 @@ export async function updateClient(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const moto = await tx.motorcycle.findUnique({
+        where: { id: input.motorcycleId },
+        select: { clientId: true },
+      });
+
+      if (!moto || moto.clientId !== input.clientId) {
+        throw new Error("UNAUTHORIZED_MOTORCYCLE");
+      }
+
       await tx.client.update({
         where: { id: input.clientId },
         data: {
@@ -288,6 +352,8 @@ export async function updateClient(
         },
       });
 
+      const arrivalDate = parseRequiredDate(input.arrivalDate);
+
       await tx.motorcycle.update({
         where: { id: input.motorcycleId },
         data: {
@@ -297,6 +363,7 @@ export async function updateClient(
           )
             ? parseOptionalDate(input.registrationStatusDate)
             : null,
+          ...(arrivalDate ? { arrivalDate } : {}),
         },
       });
     });
@@ -308,6 +375,13 @@ export async function updateClient(
       message: "Cliente atualizado com sucesso.",
     };
   } catch (err) {
+    if (err instanceof Error && err.message === "UNAUTHORIZED_MOTORCYCLE") {
+      return {
+        status: "error",
+        message: "Moto não autorizada para este cliente.",
+      };
+    }
+
     console.error(err);
 
     return {
@@ -319,6 +393,19 @@ export async function updateClient(
 
 export async function FetchMotorcycleByChassis(chassis: string) {
   await requireBdc();
+
+  const ip = await getClientIp();
+  const limit = rateLimit({
+    identifier: `bdc:fetch-moto:${ip}`,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!limit.success) {
+    return {
+      status: "error",
+      message: "Muitas requisições. Aguarde um momento.",
+    };
+  }
 
   const data = await bdcGetMotorcycle({ chassis });
 
@@ -336,10 +423,25 @@ export async function FetchMotorcycleByChassis(chassis: string) {
   };
 }
 
+const IMPORT_BATCH_LIMIT = 500;
+
 export async function importClients(
   data: ClientSchema[],
 ): Promise<ApiResponse> {
   await requireBdc();
+
+  const ip = await getClientIp();
+  const limit = rateLimit({
+    identifier: `bdc:import:${ip}`,
+    limit: 10,
+    windowMs: 60_000,
+  });
+  if (!limit.success) {
+    return {
+      status: "error",
+      message: "Muitas requisições. Aguarde um momento.",
+    };
+  }
 
   try {
     if (!data.length) {
@@ -349,7 +451,24 @@ export async function importClients(
       };
     }
 
-    const chassisList = data.map((item) => item.chassis);
+    if (data.length > IMPORT_BATCH_LIMIT) {
+      return {
+        status: "error",
+        message: `Limite de ${IMPORT_BATCH_LIMIT} registros por importação excedido.`,
+      };
+    }
+
+    const validation = clientSchema.array().safeParse(data);
+    if (!validation.success) {
+      return {
+        status: "error",
+        message:
+          "Dados da planilha inválidos. Verifique chassi, datas e campos obrigatórios.",
+      };
+    }
+
+    const validatedData = validation.data;
+    const chassisList = validatedData.map((item) => item.chassis);
 
     const motorcycles = await prisma.motorcycle.findMany({
       where: {
@@ -374,7 +493,7 @@ export async function importClients(
       motorcycles.map((motorcycle) => [motorcycle.chassis, motorcycle.id]),
     );
 
-    const validRows = data.filter((item) =>
+    const validRows = validatedData.filter((item) =>
       motorcycleIdByChassis.has(item.chassis),
     );
 
@@ -385,51 +504,47 @@ export async function importClients(
       };
     }
 
-    const createdClients = await prisma.$transaction(
-      validRows.map((item) =>
-        prisma.client.create({
-          data: {
-            name: item.client,
-            sellerName: item.sellersName,
-            city: item.city,
-            billingDate: parseOptionalDate(item.billingDate),
-          },
-        }),
-      ),
-    );
-
     await prisma.$transaction(
-      createdClients.map((client, index) => {
-        const row = validRows[index];
-        const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+      async (tx) => {
+        for (const row of validRows) {
+          const client = await tx.client.create({
+            data: {
+              name: row.client,
+              sellerName: row.sellersName,
+              city: row.city,
+              billingDate: parseOptionalDate(row.billingDate),
+            },
+          });
 
-        if (!motorcycleId) {
-          throw new Error(`Moto não encontrada para o chassi ${row.chassis}`);
+          const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+
+          if (!motorcycleId) {
+            throw new Error(`Moto não encontrada para o chassi ${row.chassis}`);
+          }
+
+          const status = row.registrationStatus ?? RegistrationStatus.PENDING;
+
+          await tx.motorcycle.update({
+            where: { id: motorcycleId },
+            data: {
+              clientId: client.id,
+              model: row.model,
+              registrationStatus: status,
+              registrationStatusDate: shouldTrackRegistrationDate(status)
+                ? parseOptionalDate(row.registrationStatusDate)
+                : null,
+            },
+          });
         }
-
-        const status = row.registrationStatus ?? RegistrationStatus.PENDING;
-
-        return prisma.motorcycle.update({
-          where: {
-            id: motorcycleId,
-          },
-          data: {
-            clientId: client.id,
-            model: row.model,
-            registrationStatus: status,
-            registrationStatusDate: shouldTrackRegistrationDate(status)
-              ? parseOptionalDate(row.registrationStatusDate)
-              : null,
-          },
-        });
-      }),
+      },
+      { timeout: 30_000 },
     );
 
     revalidatePath("/bdc");
 
     return {
       status: "success",
-      message: `${createdClients.length} clientes importados com sucesso.`,
+      message: `${validRows.length} clientes importados com sucesso.`,
     };
   } catch (error) {
     console.error("Import clients error:", error);

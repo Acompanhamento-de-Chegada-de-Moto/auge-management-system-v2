@@ -46,6 +46,25 @@ function getRegistrationDateLabel(status: string): string {
     : "Data de Saída para Emplacamento";
 }
 
+function getArrivalStatusLabel(date: Date | undefined): {
+  text: string;
+  color: string;
+} {
+  if (!date) return { text: "Não definida", color: "text-muted-foreground" };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const arrival = new Date(date);
+  arrival.setHours(0, 0, 0, 0);
+
+  if (arrival <= today) {
+    return { text: "Chegou", color: "text-emerald-600" };
+  }
+
+  return { text: "Não chegou", color: "text-amber-600" };
+}
+
 export function CreateClientForm() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +74,7 @@ export function CreateClientForm() {
   const [billingDate, setBillingDate] = useState("");
   const [plateStatus, setPlateStatus] = useState("Pendente");
   const [registrationStatusDate, setRegistrationStatusDate] = useState("");
+  const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [chassis, setChassis] = useState("");
   const [motorcycle, setMotorcycle] = useState<MotorcyclePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +86,14 @@ export function CreateClientForm() {
       setRegistrationStatusDate("");
     }
   }, [plateStatus]);
+
+  useEffect(() => {
+    if (motorcycle?.arrivalDate) {
+      setArrivalDate(new Date(motorcycle.arrivalDate));
+    } else {
+      setArrivalDate(undefined);
+    }
+  }, [motorcycle]);
 
   async function handleSearch() {
     if (!chassis) return;
@@ -104,6 +132,7 @@ export function CreateClientForm() {
     setBillingDate("");
     setPlateStatus("Pendente");
     setRegistrationStatusDate("");
+    setArrivalDate(undefined);
     setError(null);
     setSubmitError(null);
   }
@@ -125,6 +154,9 @@ export function CreateClientForm() {
         registrationStatusDate: shouldShowRegistrationDate(plateStatus)
           ? registrationStatusDate || null
           : null,
+        arrivalDate: arrivalDate
+          ? arrivalDate.toISOString().split("T")[0]
+          : null,
       });
 
       if (result.status !== "success") {
@@ -140,18 +172,6 @@ export function CreateClientForm() {
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  function hasArrived(arrivalDate?: Date | string | null): boolean {
-    if (!arrivalDate) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const arrival = new Date(arrivalDate);
-    arrival.setHours(0, 0, 0, 0);
-
-    return arrival <= today;
   }
 
   return (
@@ -213,7 +233,7 @@ export function CreateClientForm() {
               </Button>
             </div>
 
-            {motorcycle && hasArrived(motorcycle.arrivalDate) && (
+            {motorcycle && (
               <div className="mt-3 text-sm text-green-600">
                 Moto encontrada: <strong>{motorcycle.model}</strong>
               </div>
@@ -222,7 +242,7 @@ export function CreateClientForm() {
             {error && <div className="mt-3 text-sm text-red-500">{error}</div>}
           </div>
 
-          {motorcycle && hasArrived(motorcycle.arrivalDate) && (
+          {motorcycle && (
             <div className="rounded-lg border border-border p-4">
               <p className="text-sm font-medium mb-3">
                 2. Preencher dados do cliente
@@ -287,40 +307,16 @@ export function CreateClientForm() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label className="text-sm">Status de Chegada</Label>
-                  <div className="flex h-12 items-center gap-2 rounded-lg border border-input bg-muted/40 px-3 text-sm">
-                    {motorcycle.arrivalDate ? (
-                      hasArrived(motorcycle.arrivalDate) ? (
-                        <>
-                          <span className="font-medium text-emerald-600">
-                            Chegou
-                          </span>
-                          <span className="ml-auto text-sm text-muted-foreground">
-                            {new Intl.DateTimeFormat("pt-BR").format(
-                              new Date(motorcycle.arrivalDate),
-                            )}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-amber-600 font-medium">
-                            Não chegou
-                          </span>
-                          <span className="ml-auto text-sm text-muted-foreground">
-                            {new Intl.DateTimeFormat("pt-BR").format(
-                              new Date(motorcycle.arrivalDate),
-                            )}
-                          </span>
-                        </>
-                      )
-                    ) : (
-                      <span className="text-muted-foreground">Aguardando</span>
-                    )}
-                  </div>
-
-                  <span className="text-xs text-muted-foreground">
-                    Atualizado automaticamente pela logística
-                  </span>
+                  <Label className="text-sm">Data de Chegada</Label>
+                  <DatePicker value={arrivalDate} onChange={setArrivalDate} />
+                  {(() => {
+                    const { text, color } = getArrivalStatusLabel(arrivalDate);
+                    return (
+                      <span className={`text-xs font-medium ${color}`}>
+                        {text}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-col gap-2">

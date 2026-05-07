@@ -19,11 +19,32 @@ const datePreprocess = (val: unknown) => {
 };
 
 export const clientSchema = z.object({
-  client: z.string().trim().min(1, "Cliente é obrigatório"),
-  model: z.string().trim().min(1, "Modelo é obrigatório"),
-  chassis: z.string().trim().min(1, "Chassi é obrigatório"),
-  sellersName: z.string().trim().min(1, "Vendedor é obrigatório"),
-  city: z.string().trim().min(1, "Cidade é obrigatória"),
+  client: z
+    .string()
+    .trim()
+    .min(1, "Cliente é obrigatório")
+    .max(200, "Máximo 200 caracteres"),
+  model: z
+    .string()
+    .trim()
+    .min(1, "Modelo é obrigatório")
+    .max(200, "Máximo 200 caracteres"),
+  chassis: z
+    .string()
+    .trim()
+    .min(1, "Chassi é obrigatório")
+    .length(17, "Chassi deve ter 17 caracteres")
+    .regex(/^[A-HJ-NPR-Z0-9]{17}$/i, "Chassi inválido"),
+  sellersName: z
+    .string()
+    .trim()
+    .min(1, "Vendedor é obrigatório")
+    .max(200, "Máximo 200 caracteres"),
+  city: z
+    .string()
+    .trim()
+    .min(1, "Cidade é obrigatória")
+    .max(100, "Máximo 100 caracteres"),
 
   billingDate: z.preprocess(datePreprocess, z.date()),
 

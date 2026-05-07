@@ -2,13 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
+import type { PublicClientStatusRow } from "@/app/data/bdc/bdc-get-client-rows";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientStatusCard } from "./ClientStatusCard";
 
 async function fetchClientSearchResults(
   query: string,
-): Promise<BdcClientTableRow[]> {
+): Promise<PublicClientStatusRow[]> {
   if (!query || query.length < 3) return [];
 
   const response = await fetch(

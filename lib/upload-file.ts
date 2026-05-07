@@ -6,6 +6,24 @@ type UploadResult = {
   error?: string;
 };
 
+function parseExcelDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+
+  if (typeof value === "number") {
+    // Excel serial date to JS Date (days since 1900-01-01, with 25569 offset to 1970-01-01)
+    return new Date(Math.round((value - 25569) * 86400 * 1000));
+  }
+
+  if (typeof value === "string") {
+    const [day, month, year] = value.split("/");
+    if (day && month && year) {
+      return new Date(`${year}-${month}-${day}`);
+    }
+  }
+
+  return new Date(String(value));
+}
+
 export async function parseExcelFile(file: File): Promise<UploadResult> {
   try {
     const buffer = await file.arrayBuffer();
@@ -58,7 +76,7 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
 
       if (!chassi || !dataChegada) return;
 
-      const chassisStr = String(chassi).trim();
+      const chassisStr = String(chassi).trim().toUpperCase();
 
       if (seenChassis.has(chassisStr)) return;
       seenChassis.add(chassisStr);
@@ -66,7 +84,7 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       rows.push({
         chassis: chassisStr,
         model: modelo ? String(modelo).trim() : "",
-        arrivalDate: new Date(dataChegada as string),
+        arrivalDate: parseExcelDate(dataChegada),
       });
     });
 

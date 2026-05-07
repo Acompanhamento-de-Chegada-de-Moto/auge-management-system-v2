@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import { authClient } from "@/lib/auth-client";
 import { env } from "@/lib/env";
 import { type LoginInputType, loginSchema } from "@/lib/zodSchemas";
 export function LoginForm() {
-  const [emailAndPasswordPending, startEmailAndPasswordTransition] =
+  const [_emailAndPasswordPending, startEmailAndPasswordTransition] =
     useTransition();
 
   const {
@@ -34,7 +33,7 @@ export function LoginForm() {
       await authClient.signIn.email({
         email: data.email,
         password: data.password,
-        callbackURL: `${env.NEXT_PUBLIC_BETTER_AUTH_URL}/bdc`,
+        callbackURL: `${env.NEXT_PUBLIC_BETTER_AUTH_URL}/logistics`,
       });
     });
   };
