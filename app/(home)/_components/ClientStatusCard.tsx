@@ -77,7 +77,7 @@ export function ClientStatusCard({ row }: { row: PublicClientStatusRow }) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex text-nowrap items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-zinc-400" />
               <span className="text-sm font-medium text-zinc-600">
                 Situação:
