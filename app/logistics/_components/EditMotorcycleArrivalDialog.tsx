@@ -128,7 +128,7 @@ export function EditMotorcycleArrivalDialog({ chassis }: { chassis: string }) {
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <Button
                 type="button"
                 variant="outline"

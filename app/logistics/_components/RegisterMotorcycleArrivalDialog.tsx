@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { type Resolver, useForm } from "react-hook-form";
-
+import { Controller, type Resolver, useForm } from "react-hook-form";
+import { DatePicker } from "@/components/layout/DatePicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { tryCatch } from "@/lib/tryCatch";
 import {
   type MotorcycleArrivalSchema,
@@ -95,15 +94,17 @@ export function RegisterMotorcycleArrivalDialog() {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="arrivalDate">Data de Chegada</Label>
-                <Input
-                  id="arrivalDate"
-                  type="date"
-                  {...form.register("arrivalDate")}
+                <Controller
+                  control={form.control}
+                  name="arrivalDate"
+                  render={({ field }) => (
+                    <DatePicker value={field.value} onChange={field.onChange} />
+                  )}
                 />
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <Button
                 type="button"
                 variant="outline"
