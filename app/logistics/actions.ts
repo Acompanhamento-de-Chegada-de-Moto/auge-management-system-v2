@@ -5,11 +5,26 @@ import { requireLogistics } from "@/app/data/logistics/require-logistics";
 import { prisma } from "@/lib/db";
 import { getClientIp } from "@/lib/get-client-ip";
 import { rateLimit } from "@/lib/rate-limit";
-import type { ApiResponse } from "@/lib/types";
+import type { ApiResponse, Motorcycle } from "@/lib/types";
 import {
   type MotorcycleArrivalSchema,
   motorcycleArrivalSchema,
 } from "@/validators/motorcycleArrivalSchema";
+import { logisticsGetMotorcycleByChassis } from "../data/logistics/logistics-get-motorcycle";
+
+type GetMotorcycleByChassisResponse =
+  | {
+      status: "success";
+      data: {
+        chassis: string;
+        model: string;
+        arrivalDate: Date;
+      };
+    }
+  | {
+      status: "error";
+      message: string;
+    };
 
 function parseSafeDate(date: string | Date): Date {
   if (date instanceof Date) return date;
@@ -69,7 +84,7 @@ export async function RegisterMotorcycleArrival(
 
 const IMPORT_BATCH_LIMIT = 500;
 
-export async function importMotorcycles(
+export async function ImportMotorcycles(
   data: MotorcycleArrivalSchema[],
 ): Promise<ApiResponse> {
   await requireLogistics();
@@ -130,6 +145,109 @@ export async function importMotorcycles(
     return {
       status: "error",
       message: "Database error while importing motorcycles.",
+    };
+  }
+}
+
+export async function DeleteMotorcycle(chassis: string): Promise<ApiResponse> {
+  await requireLogistics();
+
+  try {
+    const existingMotorcycle = await logisticsGetMotorcycleByChassis(chassis);
+
+    if (!existingMotorcycle) {
+      return {
+        status: "error",
+        message: "Motorcycle already deleted.",
+      };
+    }
+
+    await prisma.motorcycle.delete({
+      where: {
+        id: existingMotorcycle.id,
+      },
+    });
+
+    revalidatePath("/logistics");
+
+    return {
+      status: "success",
+      message: "Motorcycle deleted successfully.",
+    };
+  } catch {
+    return {
+      status: "error",
+      message: "Error while deleting motorcycle.",
+    };
+  }
+}
+
+export async function EditMotorcycle(
+  chassis: string,
+  data: MotorcycleArrivalSchema,
+): Promise<ApiResponse> {
+  await requireLogistics();
+
+  try {
+    const existingMotorcycle = await logisticsGetMotorcycleByChassis(chassis);
+
+    if (!existingMotorcycle) {
+      return {
+        status: "error",
+        message: "Motorcycle not found.",
+      };
+    }
+
+    await prisma.motorcycle.update({
+      where: {
+        chassis,
+      },
+      data: {
+        chassis: data.chassis,
+        model: data.model,
+        arrivalDate: data.arrivalDate,
+      },
+    });
+
+    revalidatePath("/logistics");
+
+    return {
+      status: "success",
+      message: "Motorcycle updated successfully.",
+    };
+  } catch {
+    return {
+      status: "error",
+      message: "Error while updating motorcycle.",
+    };
+  }
+}
+
+export async function GetMotorcycleByChassis(
+  chassis: string,
+): Promise<GetMotorcycleByChassisResponse> {
+  try {
+    const motorcycle = await logisticsGetMotorcycleByChassis(chassis);
+
+    if (!motorcycle) {
+      return {
+        status: "error",
+        message: "Motorcycle not found.",
+      };
+    }
+
+    return {
+      status: "success",
+      data: {
+        chassis: motorcycle.chassis,
+        model: motorcycle.model,
+        arrivalDate: motorcycle.arrivalDate,
+      },
+    };
+  } catch {
+    return {
+      status: "error",
+      message: "Error while fetching motorcycle.",
     };
   }
 }

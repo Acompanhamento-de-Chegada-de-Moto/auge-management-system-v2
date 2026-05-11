@@ -4,7 +4,7 @@ export type ApiResponse = {
 };
 
 export type Motorcycle = {
-  id: string;
+  id?: string;
   chassis: string;
   model: string;
   arrivalDate: Date;

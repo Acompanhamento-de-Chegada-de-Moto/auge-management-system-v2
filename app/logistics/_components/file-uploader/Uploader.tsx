@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/lib/notify";
 import { parseExcelFile } from "@/lib/upload-file";
-import { importMotorcycles } from "../../actions";
+import { ImportMotorcycles } from "../../actions";
 
 export function Uploader() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +34,7 @@ export function Uploader() {
         return;
       }
 
-      const response = await importMotorcycles(result.data);
+      const response = await ImportMotorcycles(result.data);
 
       if (response.status === "error") {
         notify.error(response.message);

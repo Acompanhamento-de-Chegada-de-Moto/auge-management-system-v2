@@ -1,4 +1,5 @@
 import { logisticsGetMotorcycles } from "@/app/data/logistics/logistics-get-motorcycles";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -9,7 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CopyToClipboard } from "./CopyToClipboard";
+import { EditMotorcycleArrivalDialog } from "./EditMotorcycleArrivalDialog";
 import { LogisticsClientWrapper } from "./LogisticsClientWrapper";
+import { TableActions } from "./TableActions";
 
 interface Props {
   page: number;
@@ -30,12 +33,13 @@ export async function ListMotorcycle({ page, pageSize }: Props) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 border-b border-border">
-                <TableHead className="w-[280px] font-semibold">
-                  Chassi
-                </TableHead>
+                <TableHead className="w-70 font-semibold">Chassi</TableHead>
                 <TableHead className="font-semibold">Modelo</TableHead>
                 <TableHead className="text-right font-semibold">
                   Data de Chegada
+                </TableHead>
+                <TableHead className="text-right font-semibold">
+                  Ações
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -64,6 +68,10 @@ export async function ListMotorcycle({ page, pageSize }: Props) {
                       {new Intl.DateTimeFormat("pt-BR").format(
                         new Date(e.arrivalDate),
                       )}
+                    </TableCell>
+                    <TableCell className="flex justify-end">
+                      <EditMotorcycleArrivalDialog chassis={e.chassis} />
+                      <TableActions chassis={e.chassis} />
                     </TableCell>
                   </TableRow>
                 ))
