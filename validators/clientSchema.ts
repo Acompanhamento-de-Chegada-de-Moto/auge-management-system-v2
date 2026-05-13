@@ -47,10 +47,9 @@ export const clientSchema = z.object({
     .max(100, "Máximo 100 caracteres"),
 
   billingDate: z.preprocess(datePreprocess, z.date()),
-
   registrationStatus: registrationStatusSchema.optional(),
-
   registrationStatusDate: z.date().nullable().optional(),
+  arrivalDate: z.date().optional(),
 });
 
 export type ClientSchema = z.infer<typeof clientSchema>;

@@ -46,25 +46,6 @@ function getRegistrationDateLabel(status: string): string {
     : "Data de Saída para Emplacamento";
 }
 
-function getArrivalStatusLabel(date: Date | undefined): {
-  text: string;
-  color: string;
-} {
-  if (!date) return { text: "Não definida", color: "text-muted-foreground" };
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const arrival = new Date(date);
-  arrival.setHours(0, 0, 0, 0);
-
-  if (arrival <= today) {
-    return { text: "Chegou", color: "text-emerald-600" };
-  }
-
-  return { text: "Não chegou", color: "text-amber-600" };
-}
-
 export function CreateClientForm() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

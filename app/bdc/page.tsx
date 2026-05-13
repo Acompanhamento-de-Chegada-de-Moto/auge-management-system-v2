@@ -5,7 +5,7 @@ import { LogoutButton } from "@/components/layout/LogoutButton";
 import { auth } from "@/lib/auth";
 import { ClientsTable } from "./_components/ClientsTable";
 import { ClientsTableSkeleton } from "./_components/ClientsTableSkeleton";
-import { CreateClientForm } from "./_components/CreateClientForm";
+import { CreateClientDialog } from "./_components/CreateClientDialog";
 import { Uploader } from "./_components/file-uploader/Uploader";
 import { SearchInput } from "./_components/SearchInput";
 
@@ -43,11 +43,8 @@ export default async function BdcRoute({
 
           <div className="flex items-center gap-2">
             <SearchInput />
-
-            <CreateClientForm />
-
+            <CreateClientDialog />
             <Uploader />
-
             <LogoutButton />
           </div>
         </div>
