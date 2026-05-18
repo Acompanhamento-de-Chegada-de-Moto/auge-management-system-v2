@@ -28,15 +28,11 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
     let worksheet = null;
     for (const nome of ABA_ALTERNATIVAS) {
       worksheet = workbook.getWorksheet(nome);
-      if (worksheet) {
-        console.log(`[BDC Upload] Aba encontrada: "${nome}"`);
-        break;
-      }
+      if (worksheet) break;
     }
 
     if (!worksheet) {
       const abasDisponiveis = workbook.worksheets.map((w) => `"${w.name}"`);
-      console.error("[BDC Upload] Abas disponíveis:", abasDisponiveis);
       return {
         success: false,
         error: `Aba 'Página1' não foi encontrada. Abas disponíveis: ${abasDisponiveis.join(", ")}`,
@@ -81,26 +77,19 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       const text = String(value ?? "").trim();
 
       if (!text) {
-        return {
-          status: "PENDING",
-          date: null,
-        };
+        return { status: "PENDING", date: null };
       }
 
       const match = text.match(/(\d{2})\/(\d{2})/);
 
       if (!match) {
-        return {
-          status: "PENDING",
-          date: null,
-        };
+        return { status: "PENDING", date: null };
       }
 
       const [, day, month] = match;
 
       let year = baseDate ? baseDate.getFullYear() : new Date().getFullYear();
 
-      // virada de ano
       if (baseDate && Number(month) < baseDate.getMonth() + 1) {
         year += 1;
       }
@@ -117,7 +106,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       };
     };
 
-    // ---- AUTO-DETECÇÃO DA LINHA DE CABEÇALHO ----
     const targetHeaders = [
       "cliente",
       "data do faturamento",
@@ -147,14 +135,9 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
         }
       }
 
-      console.log(`[BDC Upload] Linha ${rowNum} normalizada:`, normalizedRow.slice(1));
-      console.log(`[BDC Upload] Linha ${rowNum} matches:`, matchCount);
-
-      // Exige pelo menos 6 das 7 colunas para evitar falsos positivos
       if (matchCount >= 6) {
         headerRowNumber = rowNum;
         requiredColumns = matchedColumns;
-        console.log(`[BDC Upload] Cabeçalho detectado na linha ${rowNum}`);
         break;
       }
     }
@@ -166,7 +149,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       };
     }
 
-    // Garante que todas as colunas esperadas existam
     const missingColumns = targetHeaders.filter((h) => !(h in requiredColumns));
     if (missingColumns.length) {
       return {
@@ -174,8 +156,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
         error: `Colunas obrigatórias ausentes: ${missingColumns.join(", ")}`,
       };
     }
-
-    console.log("[BDC Upload] Mapeamento final:", requiredColumns);
 
     const CHASSI_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/i;
 
@@ -196,7 +176,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       }
 
       if (!CHASSI_REGEX.test(chassis)) {
-        console.warn(`[BDC Upload] Linha ${rowNumber} ignorada: chassi inválido "${chassis}"`);
         skippedRows.push(rowNumber);
         return;
       }
@@ -207,7 +186,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       const city = String(row.getCell(requiredColumns.cidade).value ?? "").trim();
 
       if (!client || !model || !sellersName || !city) {
-        console.warn(`[BDC Upload] Linha ${rowNumber} ignorada: campos obrigatórios vazios`);
         skippedRows.push(rowNumber);
         return;
       }
@@ -235,8 +213,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       });
     });
 
-    console.log(`[BDC Upload] Total: ${rows.length} válidas, ${skippedRows.length} ignoradas.`);
-
     if (!rows.length) {
       return {
         success: false,
@@ -248,9 +224,7 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       success: true,
       data: rows,
     };
-  } catch (error) {
-    console.error("[BDC Upload] Erro ao processar planilha:", error);
-
+  } catch {
     return {
       success: false,
       error: "Erro ao processar a planilha.",

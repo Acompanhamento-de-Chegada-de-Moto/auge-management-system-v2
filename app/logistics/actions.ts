@@ -72,9 +72,7 @@ export async function RegisterMotorcycleArrival(
       status: "success",
       message: "Motorcycle created successfully",
     };
-  } catch (error) {
-    console.error(error);
-
+  } catch {
     return {
       status: "error",
       message: "Failed to register a new motorcycle",
@@ -107,7 +105,6 @@ export async function ImportMotorcycles(
 
     const validation = motorcycleArrivalSchema.array().safeParse(data);
     if (!validation.success) {
-      console.error("[Logistics Import] Zod validation failed:", validation.error.issues);
       const issues = validation.error.issues.slice(0, 3);
       const details = issues
         .map((issue) => {
@@ -140,9 +137,7 @@ export async function ImportMotorcycles(
       status: "success",
       message: `${count} ${count === 1 ? "moto importada" : "motos importadas"} com sucesso.`,
     };
-  } catch (error) {
-    console.error(error);
-
+  } catch {
     return {
       status: "error",
       message: "Database error while importing motorcycles.",

@@ -40,15 +40,11 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
     let worksheet = null;
     for (const nome of ABA_ALTERNATIVAS) {
       worksheet = workbook.getWorksheet(nome);
-      if (worksheet) {
-        console.log(`[Logistics Upload] Aba encontrada: ${nome}`);
-        break;
-      }
+      if (worksheet) break;
     }
 
     if (!worksheet) {
       const abasDisponiveis = workbook.worksheets.map((w) => w.name);
-      console.error("[Logistics Upload] Abas disponíveis:", abasDisponiveis);
       return {
         success: false,
         error: `Aba 'Página2' não encontrada. Abas disponíveis: ${abasDisponiveis.join(", ")}`,
@@ -65,8 +61,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
 
     const headerRow = worksheet.getRow(1);
     const headers = headerRow.values as unknown[];
-
-    console.log("[Logistics Upload] Headers brutos:", headers);
 
     let chassiIndex = -1;
     let modeloIndex = -1;
@@ -85,12 +79,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
         normalized === "data de chegada moto"
       )
         dataIndex = index;
-    });
-
-    console.log("[Logistics Upload] Índices encontrados:", {
-      chassiIndex,
-      modeloIndex,
-      dataIndex,
     });
 
     if (chassiIndex === -1 || modeloIndex === -1 || dataIndex === -1) {
@@ -122,7 +110,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       const chassisStr = String(chassi).trim().toUpperCase();
 
       if (!CHASSI_REGEX.test(chassisStr)) {
-        console.warn(`[Logistics Upload] Linha ${rowNumber} ignorada: chassi inválido "${chassisStr}"`);
         skippedRows.push(rowNumber);
         return;
       }
@@ -135,14 +122,12 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
 
       const modelStr = modelo ? String(modelo).trim() : "";
       if (!modelStr) {
-        console.warn(`[Logistics Upload] Linha ${rowNumber} ignorada: modelo vazio`);
         skippedRows.push(rowNumber);
         return;
       }
 
       const arrivalDate = parseExcelDate(dataChegada);
       if (Number.isNaN(arrivalDate.getTime())) {
-        console.warn(`[Logistics Upload] Linha ${rowNumber} ignorada: data inválida "${dataChegada}"`);
         skippedRows.push(rowNumber);
         return;
       }
@@ -153,8 +138,6 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
         arrivalDate,
       });
     });
-
-    console.log(`[Logistics Upload] Total processado: ${rows.length} linhas válidas, ${skippedRows.length} ignoradas.`);
 
     if (!rows.length) {
       return {
@@ -167,8 +150,7 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       success: true,
       data: rows,
     };
-  } catch (error) {
-    console.error("[Logistics Upload] Erro ao processar planilha:", error);
+  } catch {
     return { success: false, error: "Erro ao processar a planilha." };
   }
 }

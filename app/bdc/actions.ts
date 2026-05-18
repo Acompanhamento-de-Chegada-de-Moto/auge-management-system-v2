@@ -382,8 +382,6 @@ export async function updateClient(
       };
     }
 
-    console.error(err);
-
     return {
       status: "error",
       message: "Erro ao atualizar cliente.",
@@ -451,7 +449,6 @@ export async function importClients(
 
     const validation = clientSchema.array().safeParse(data);
     if (!validation.success) {
-      console.error("[BDC Import] Zod validation failed:", validation.error.issues);
       const issues = validation.error.issues.slice(0, 3);
       const details = issues
         .map((issue) => {
@@ -499,55 +496,69 @@ export async function importClients(
       };
     }
 
-    await prisma.$transaction(
-      async (tx) => {
-        for (const row of validRows) {
-          const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+    // Processa em lotes de 50 para evitar timeout no Neon (serverless PostgreSQL)
+    const BATCH_SIZE = 50;
+    let importedCount = 0;
+    let failedCount = 0;
 
-          if (!motorcycleId) continue;
+    for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+      const batch = validRows.slice(i, i + BATCH_SIZE);
 
-          const client = await tx.client.create({
-            data: {
-              name: row.client,
-              sellerName: row.sellersName,
-              city: row.city,
-              billingDate: parseOptionalDate(row.billingDate),
-            },
-          });
+      try {
+        await prisma.$transaction(
+          async (tx) => {
+            for (const row of batch) {
+              const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+              if (!motorcycleId) continue;
 
-          const status = row.registrationStatus ?? RegistrationStatus.PENDING;
+              const client = await tx.client.create({
+                data: {
+                  name: row.client,
+                  sellerName: row.sellersName,
+                  city: row.city,
+                  billingDate: parseOptionalDate(row.billingDate),
+                },
+              });
 
-          await tx.motorcycle.update({
-            where: { id: motorcycleId },
-            data: {
-              clientId: client.id,
-              model: row.model,
-              registrationStatus: status,
-              registrationStatusDate: shouldTrackRegistrationDate(status)
-                ? parseOptionalDate(row.registrationStatusDate)
-                : null,
-            },
-          });
-        }
-      },
-      { timeout: 30_000 },
-    );
+              const status = row.registrationStatus ?? RegistrationStatus.PENDING;
+
+              await tx.motorcycle.update({
+                where: { id: motorcycleId },
+                data: {
+                  clientId: client.id,
+                  model: row.model,
+                  registrationStatus: status,
+                  registrationStatusDate: shouldTrackRegistrationDate(status)
+                    ? parseOptionalDate(row.registrationStatusDate)
+                    : null,
+                },
+              });
+            }
+          },
+          { timeout: 60_000, maxWait: 10_000 },
+        );
+
+        importedCount += batch.length;
+      } catch {
+        failedCount += batch.length;
+      }
+    }
 
     revalidatePath("/bdc");
 
-    const importedCount = validRows.length;
     let message = `${importedCount} ${importedCount === 1 ? "cliente importado" : "clientes importados"} com sucesso.`;
     if (ignoredCount > 0) {
       message += ` ${ignoredCount} ${ignoredCount === 1 ? "registro foi ignorado" : "registros foram ignorados"} (chassi não encontrado na logística).`;
+    }
+    if (failedCount > 0) {
+      message += ` ${failedCount} ${failedCount === 1 ? "registro falhou" : "registros falharam"} no banco.`;
     }
 
     return {
       status: "success",
       message,
     };
-  } catch (error) {
-    console.error("Import clients error:", error);
-
+  } catch {
     return {
       status: "error",
       message: "Erro no banco ao importar clientes.",
