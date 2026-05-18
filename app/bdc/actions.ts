@@ -496,13 +496,15 @@ export async function importClients(
       };
     }
 
-    // Processa em lotes de 50 para evitar timeout no Neon (serverless PostgreSQL)
-    const BATCH_SIZE = 50;
+    // Processa em lotes pequenos para evitar timeout no Neon (serverless PostgreSQL).
+    // Se um lote falhar, tenta item por item para salvar o máximo possível.
+    const BATCH_SIZE = 20;
     let importedCount = 0;
     let failedCount = 0;
 
     for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
       const batch = validRows.slice(i, i + BATCH_SIZE);
+      let batchSuccess = false;
 
       try {
         await prisma.$transaction(
@@ -535,12 +537,54 @@ export async function importClients(
               });
             }
           },
-          { timeout: 60_000, maxWait: 10_000 },
+          { timeout: 120_000, maxWait: 15_000 },
         );
 
         importedCount += batch.length;
+        batchSuccess = true;
       } catch {
-        failedCount += batch.length;
+        // Se o lote falhou, tenta um a um
+      }
+
+      if (!batchSuccess) {
+        for (const row of batch) {
+          const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+          if (!motorcycleId) continue;
+
+          try {
+            await prisma.$transaction(
+              async (tx) => {
+                const client = await tx.client.create({
+                  data: {
+                    name: row.client,
+                    sellerName: row.sellersName,
+                    city: row.city,
+                    billingDate: parseOptionalDate(row.billingDate),
+                  },
+                });
+
+                const status = row.registrationStatus ?? RegistrationStatus.PENDING;
+
+                await tx.motorcycle.update({
+                  where: { id: motorcycleId },
+                  data: {
+                    clientId: client.id,
+                    model: row.model,
+                    registrationStatus: status,
+                    registrationStatusDate: shouldTrackRegistrationDate(status)
+                      ? parseOptionalDate(row.registrationStatusDate)
+                      : null,
+                  },
+                });
+              },
+              { timeout: 30_000, maxWait: 5_000 },
+            );
+
+            importedCount++;
+          } catch {
+            failedCount++;
+          }
+        }
       }
     }
 
