@@ -423,8 +423,6 @@ export async function FetchMotorcycleByChassis(chassis: string) {
   };
 }
 
-const IMPORT_BATCH_LIMIT = 500;
-
 export async function importClients(
   data: ClientSchema[],
 ): Promise<ApiResponse> {
@@ -433,7 +431,7 @@ export async function importClients(
   const ip = await getClientIp();
   const limit = rateLimit({
     identifier: `bdc:import:${ip}`,
-    limit: 10,
+    limit: 10000,
     windowMs: 60_000,
   });
   if (!limit.success) {
@@ -451,19 +449,20 @@ export async function importClients(
       };
     }
 
-    if (data.length > IMPORT_BATCH_LIMIT) {
-      return {
-        status: "error",
-        message: `Limite de ${IMPORT_BATCH_LIMIT} registros por importação excedido.`,
-      };
-    }
-
     const validation = clientSchema.array().safeParse(data);
     if (!validation.success) {
+      console.error("[BDC Import] Zod validation failed:", validation.error.issues);
+      const issues = validation.error.issues.slice(0, 3);
+      const details = issues
+        .map((issue) => {
+          const path = issue.path.length > 0 ? issue.path.join(".") : "";
+          return path ? `${path}: ${issue.message}` : issue.message;
+        })
+        .join("; ");
+
       return {
         status: "error",
-        message:
-          "Dados da planilha inválidos. Verifique chassi, datas e campos obrigatórios.",
+        message: `Dados da planilha inválidos: ${details}`,
       };
     }
 
@@ -482,13 +481,6 @@ export async function importClients(
       },
     });
 
-    if (!motorcycles.length) {
-      return {
-        status: "error",
-        message: "Nenhuma moto correspondente encontrada.",
-      };
-    }
-
     const motorcycleIdByChassis = new Map(
       motorcycles.map((motorcycle) => [motorcycle.chassis, motorcycle.id]),
     );
@@ -497,16 +489,23 @@ export async function importClients(
       motorcycleIdByChassis.has(item.chassis),
     );
 
+    const ignoredCount = validatedData.length - validRows.length;
+
     if (!validRows.length) {
+      revalidatePath("/bdc");
       return {
-        status: "error",
-        message: "Nenhuma linha válida encontrada para importação.",
+        status: "success",
+        message: `0 clientes importados. ${ignoredCount} ${ignoredCount === 1 ? "registro foi ignorado" : "registros foram ignorados"} (chassi não encontrado na logística).`,
       };
     }
 
     await prisma.$transaction(
       async (tx) => {
         for (const row of validRows) {
+          const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+
+          if (!motorcycleId) continue;
+
           const client = await tx.client.create({
             data: {
               name: row.client,
@@ -515,12 +514,6 @@ export async function importClients(
               billingDate: parseOptionalDate(row.billingDate),
             },
           });
-
-          const motorcycleId = motorcycleIdByChassis.get(row.chassis);
-
-          if (!motorcycleId) {
-            throw new Error(`Moto não encontrada para o chassi ${row.chassis}`);
-          }
 
           const status = row.registrationStatus ?? RegistrationStatus.PENDING;
 
@@ -542,9 +535,15 @@ export async function importClients(
 
     revalidatePath("/bdc");
 
+    const importedCount = validRows.length;
+    let message = `${importedCount} ${importedCount === 1 ? "cliente importado" : "clientes importados"} com sucesso.`;
+    if (ignoredCount > 0) {
+      message += ` ${ignoredCount} ${ignoredCount === 1 ? "registro foi ignorado" : "registros foram ignorados"} (chassi não encontrado na logística).`;
+    }
+
     return {
       status: "success",
-      message: `${validRows.length} clientes importados com sucesso.`,
+      message,
     };
   } catch (error) {
     console.error("Import clients error:", error);

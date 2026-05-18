@@ -6,6 +6,17 @@ type UploadResult = {
   error?: string;
 };
 
+const ABA_ALTERNATIVAS = [
+  "Página1",
+  "Pagina1",
+  "PÁGINA1",
+  "PAGINA1",
+  "página1",
+  "pagina1",
+  "Página 1",
+  "Pagina 1",
+];
+
 export async function parseExcelFile(file: File): Promise<UploadResult> {
   try {
     const buffer = await file.arrayBuffer();
@@ -14,12 +25,21 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer);
 
-    const worksheet = workbook.getWorksheet("Página 1");
+    let worksheet = null;
+    for (const nome of ABA_ALTERNATIVAS) {
+      worksheet = workbook.getWorksheet(nome);
+      if (worksheet) {
+        console.log(`[BDC Upload] Aba encontrada: "${nome}"`);
+        break;
+      }
+    }
 
     if (!worksheet) {
+      const abasDisponiveis = workbook.worksheets.map((w) => `"${w.name}"`);
+      console.error("[BDC Upload] Abas disponíveis:", abasDisponiveis);
       return {
         success: false,
-        error: "A aba Página 1 é obrigatória.",
+        error: `Aba 'Página1' não foi encontrada. Abas disponíveis: ${abasDisponiveis.join(", ")}`,
       };
     }
 
@@ -28,9 +48,11 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
         .trim()
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ");
 
-    const parseExcelDate = (value: unknown): Date => {
+    const parseExcelDate = (value: unknown): Date | undefined => {
+      if (value === null || value === undefined || value === "") return undefined;
       if (value instanceof Date) return value;
 
       if (typeof value === "number") {
@@ -44,12 +66,14 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
         }
       }
 
-      return new Date(String(value));
+      const parsed = new Date(String(value));
+      if (Number.isNaN(parsed.getTime())) return undefined;
+      return parsed;
     };
 
     const parseRegistrationStatus = (
       value: unknown,
-      baseDate: Date,
+      baseDate: Date | undefined,
     ): {
       status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
       date: Date | null;
@@ -74,10 +98,10 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
 
       const [, day, month] = match;
 
-      let year = baseDate.getFullYear();
+      let year = baseDate ? baseDate.getFullYear() : new Date().getFullYear();
 
       // virada de ano
-      if (Number(month) < baseDate.getMonth() + 1) {
+      if (baseDate && Number(month) < baseDate.getMonth() + 1) {
         year += 1;
       }
 
@@ -93,28 +117,57 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       };
     };
 
-    const requiredColumns = {
-      cliente: -1,
-      "data do faturamento": -1,
-      modelo: -1,
-      chassi: -1,
-      vendedor: -1,
-      cidade: -1,
-      "status atualizado": -1,
-    };
+    // ---- AUTO-DETECÇÃO DA LINHA DE CABEÇALHO ----
+    const targetHeaders = [
+      "cliente",
+      "data do faturamento",
+      "modelo",
+      "chassi",
+      "vendedor",
+      "cidade",
+      "status atualizado",
+    ];
 
-    worksheet.getRow(1).eachCell((cell, colNumber) => {
-      const normalized = normalize(cell.value);
+    let headerRowNumber = -1;
+    let requiredColumns: Record<string, number> = {};
+    const maxRowsToCheck = Math.min(worksheet.rowCount, 10);
 
-      if (normalized in requiredColumns) {
-        requiredColumns[normalized as keyof typeof requiredColumns] = colNumber;
+    for (let rowNum = 1; rowNum <= maxRowsToCheck; rowNum++) {
+      const row = worksheet.getRow(rowNum);
+      const values = row.values as unknown[];
+      const normalizedRow = values.map((v) => normalize(v));
+      const matchedColumns: Record<string, number> = {};
+      let matchCount = 0;
+
+      for (let col = 1; col < normalizedRow.length; col++) {
+        const cellNorm = normalizedRow[col];
+        if (targetHeaders.includes(cellNorm)) {
+          matchedColumns[cellNorm] = col;
+          matchCount++;
+        }
       }
-    });
 
-    const missingColumns = Object.entries(requiredColumns)
-      .filter(([, index]) => index === -1)
-      .map(([name]) => name);
+      console.log(`[BDC Upload] Linha ${rowNum} normalizada:`, normalizedRow.slice(1));
+      console.log(`[BDC Upload] Linha ${rowNum} matches:`, matchCount);
 
+      // Exige pelo menos 6 das 7 colunas para evitar falsos positivos
+      if (matchCount >= 6) {
+        headerRowNumber = rowNum;
+        requiredColumns = matchedColumns;
+        console.log(`[BDC Upload] Cabeçalho detectado na linha ${rowNum}`);
+        break;
+      }
+    }
+
+    if (headerRowNumber === -1) {
+      return {
+        success: false,
+        error: `Não foi possível detectar a linha de cabeçalho nas primeiras ${maxRowsToCheck} linhas.`,
+      };
+    }
+
+    // Garante que todas as colunas esperadas existam
+    const missingColumns = targetHeaders.filter((h) => !(h in requiredColumns));
     if (missingColumns.length) {
       return {
         success: false,
@@ -122,17 +175,43 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       };
     }
 
+    console.log("[BDC Upload] Mapeamento final:", requiredColumns);
+
+    const CHASSI_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/i;
+
     const rows: ClientSchema[] = [];
     const seenChassis = new Set<string>();
+    const skippedRows: number[] = [];
 
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
+      if (rowNumber <= headerRowNumber) return;
 
       const chassis = String(
         row.getCell(requiredColumns.chassi).value ?? "",
-      ).trim();
+      ).trim().toUpperCase();
 
-      if (!chassis || seenChassis.has(chassis)) return;
+      if (!chassis || seenChassis.has(chassis)) {
+        skippedRows.push(rowNumber);
+        return;
+      }
+
+      if (!CHASSI_REGEX.test(chassis)) {
+        console.warn(`[BDC Upload] Linha ${rowNumber} ignorada: chassi inválido "${chassis}"`);
+        skippedRows.push(rowNumber);
+        return;
+      }
+
+      const client = String(row.getCell(requiredColumns.cliente).value ?? "").trim();
+      const model = String(row.getCell(requiredColumns.modelo).value ?? "").trim();
+      const sellersName = String(row.getCell(requiredColumns.vendedor).value ?? "").trim();
+      const city = String(row.getCell(requiredColumns.cidade).value ?? "").trim();
+
+      if (!client || !model || !sellersName || !city) {
+        console.warn(`[BDC Upload] Linha ${rowNumber} ignorada: campos obrigatórios vazios`);
+        skippedRows.push(rowNumber);
+        return;
+      }
+
       seenChassis.add(chassis);
 
       const billingDate = parseExcelDate(
@@ -145,18 +224,18 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       );
 
       rows.push({
-        client: String(row.getCell(requiredColumns.cliente).value ?? "").trim(),
+        client,
         billingDate,
-        model: String(row.getCell(requiredColumns.modelo).value ?? "").trim(),
+        model,
         chassis,
-        sellersName: String(
-          row.getCell(requiredColumns.vendedor).value ?? "",
-        ).trim(),
-        city: String(row.getCell(requiredColumns.cidade).value ?? "").trim(),
+        sellersName,
+        city,
         registrationStatus: statusData.status,
         registrationStatusDate: statusData.date,
       });
     });
+
+    console.log(`[BDC Upload] Total: ${rows.length} válidas, ${skippedRows.length} ignoradas.`);
 
     if (!rows.length) {
       return {
@@ -170,7 +249,7 @@ export async function parseExcelFile(file: File): Promise<UploadResult> {
       data: rows,
     };
   } catch (error) {
-    console.error("Spreadsheet processing error:", error);
+    console.error("[BDC Upload] Erro ao processar planilha:", error);
 
     return {
       success: false,

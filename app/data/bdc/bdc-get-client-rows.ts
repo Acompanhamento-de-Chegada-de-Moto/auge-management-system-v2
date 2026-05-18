@@ -19,41 +19,49 @@ export type BdcClientTableRow = {
 
 export async function bdcGetClientRows(
   query?: string,
-): Promise<BdcClientTableRow[]> {
+  page = 1,
+  pageSize = 10,
+): Promise<{ rows: BdcClientTableRow[]; total: number; totalPages: number }> {
   await requireBdc();
 
   const safeQuery = query && query.length > 100 ? query.slice(0, 100) : query;
 
-  const motorcycles = await prisma.motorcycle.findMany({
-    where: {
-      clientId: { not: null },
-      ...(safeQuery && {
-        OR: [
-          {
-            chassis: {
+  const where = {
+    clientId: { not: null },
+    ...(safeQuery && {
+      OR: [
+        {
+          chassis: {
+            contains: safeQuery,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          client: {
+            name: {
               contains: safeQuery,
-              mode: "insensitive",
+              mode: "insensitive" as const,
             },
           },
-          {
-            client: {
-              name: {
-                contains: safeQuery,
-                mode: "insensitive",
-              },
-            },
-          },
-        ],
-      }),
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 200,
-    include: {
-      client: true,
-    },
-  });
+        },
+      ],
+    }),
+  };
 
-  return motorcycles.map((m) => {
+  const [motorcycles, total] = await Promise.all([
+    prisma.motorcycle.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        client: true,
+      },
+    }),
+    prisma.motorcycle.count({ where }),
+  ]);
+
+  const rows = motorcycles.map((m) => {
     const client = m.client;
     if (!client) {
       throw new Error("Invariant: motorcycle has clientId but no client");
@@ -73,6 +81,12 @@ export async function bdcGetClientRows(
       registrationStatusDate: m.registrationStatusDate,
     };
   });
+
+  return {
+    rows,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
 
 export type PublicClientStatusRow = {

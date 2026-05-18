@@ -58,9 +58,10 @@ export default async function LogisticsRoute({
               Formato da planilha para importação
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              A planilha deve conter as colunas: <strong>chassi</strong>,{" "}
-              <strong>modelo</strong> e <strong>dataChegada</strong>. Formatos
-              de data aceitos: dd/mm/aaaa ou aaaa-mm-dd.
+              A planilha deve conter a aba <strong>Página2</strong> com as
+              colunas: <strong>DATA DE CHEGADA DA MOTO</strong>,{" "}
+              <strong>MODELO</strong> e <strong>CHASSI</strong>. Formatos de
+              data aceitos: dd/mm/aaaa ou aaaa-mm-dd.
             </p>
           </div>
         </CardContent>

@@ -7,6 +7,10 @@ export const registrationStatusSchema = z.enum([
 ]);
 
 const datePreprocess = (val: unknown) => {
+  if (val === null || val === undefined || val === "") return undefined;
+
+  if (val instanceof Date) return val;
+
   if (typeof val === "string") {
     const [day, month, year] = val.split("/");
 
@@ -15,7 +19,10 @@ const datePreprocess = (val: unknown) => {
     }
   }
 
-  return val;
+  const parsed = new Date(String(val));
+  if (Number.isNaN(parsed.getTime())) return undefined;
+
+  return parsed;
 };
 
 export const clientSchema = z.object({
@@ -46,7 +53,7 @@ export const clientSchema = z.object({
     .min(1, "Cidade é obrigatória")
     .max(100, "Máximo 100 caracteres"),
 
-  billingDate: z.preprocess(datePreprocess, z.date()),
+  billingDate: z.preprocess(datePreprocess, z.date().optional()).optional(),
   registrationStatus: registrationStatusSchema.optional(),
   registrationStatusDate: z.date().nullable().optional(),
   arrivalDate: z.date().optional(),

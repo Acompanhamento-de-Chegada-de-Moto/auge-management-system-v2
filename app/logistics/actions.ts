@@ -82,8 +82,6 @@ export async function RegisterMotorcycleArrival(
   }
 }
 
-const IMPORT_BATCH_LIMIT = 500;
-
 export async function ImportMotorcycles(
   data: MotorcycleArrivalSchema[],
 ): Promise<ApiResponse> {
@@ -107,18 +105,20 @@ export async function ImportMotorcycles(
       };
     }
 
-    if (data.length > IMPORT_BATCH_LIMIT) {
-      return {
-        status: "error",
-        message: `Import limit of ${IMPORT_BATCH_LIMIT} records exceeded.`,
-      };
-    }
-
     const validation = motorcycleArrivalSchema.array().safeParse(data);
     if (!validation.success) {
+      console.error("[Logistics Import] Zod validation failed:", validation.error.issues);
+      const issues = validation.error.issues.slice(0, 3);
+      const details = issues
+        .map((issue) => {
+          const path = issue.path.length > 0 ? issue.path.join(".") : "";
+          return path ? `${path}: ${issue.message}` : issue.message;
+        })
+        .join("; ");
+
       return {
         status: "error",
-        message: "Invalid spreadsheet data. Check chassis format and dates.",
+        message: `Dados da planilha inválidos: ${details}`,
       };
     }
 
@@ -135,9 +135,10 @@ export async function ImportMotorcycles(
 
     revalidatePath("/logistics");
 
+    const count = validatedData.length;
     return {
       status: "success",
-      message: `${validatedData.length} motorcycles imported successfully.`,
+      message: `${count} ${count === 1 ? "moto importada" : "motos importadas"} com sucesso.`,
     };
   } catch (error) {
     console.error(error);
