@@ -496,30 +496,43 @@ export async function importClients(
       };
     }
 
-    // Sem transação: cada operação é autocommit, muito mais rápido no Neon.
+    // Cria todos os clients de uma vez (muito mais rápido no Neon)
+    const clientData = validRows.map((row) => ({
+      name: row.client,
+      sellerName: row.sellersName,
+      city: row.city,
+      billingDate: parseOptionalDate(row.billingDate),
+    }));
+
+    let createdClients: { id: string }[] = [];
     let importedCount = 0;
     let failedCount = 0;
 
-    for (const row of validRows) {
+    try {
+      createdClients = await prisma.client.createManyAndReturn({
+        data: clientData,
+      });
+    } catch {
+      return {
+        status: "error",
+        message: "Erro ao criar clientes em lote.",
+      };
+    }
+
+    // Atualiza as motos em paralelo (vincula clientId)
+    const updatePromises = validRows.map((row, index) => {
       const motorcycleId = motorcycleIdByChassis.get(row.chassis);
-      if (!motorcycleId) {
+      const client = createdClients[index];
+
+      if (!motorcycleId || !client) {
         failedCount++;
-        continue;
+        return Promise.resolve();
       }
 
-      try {
-        const client = await prisma.client.create({
-          data: {
-            name: row.client,
-            sellerName: row.sellersName,
-            city: row.city,
-            billingDate: parseOptionalDate(row.billingDate),
-          },
-        });
+      const status = row.registrationStatus ?? RegistrationStatus.PENDING;
 
-        const status = row.registrationStatus ?? RegistrationStatus.PENDING;
-
-        await prisma.motorcycle.update({
+      return prisma.motorcycle
+        .update({
           where: { id: motorcycleId },
           data: {
             clientId: client.id,
@@ -529,13 +542,16 @@ export async function importClients(
               ? parseOptionalDate(row.registrationStatusDate)
               : null,
           },
+        })
+        .then(() => {
+          importedCount++;
+        })
+        .catch(() => {
+          failedCount++;
         });
+    });
 
-        importedCount++;
-      } catch {
-        failedCount++;
-      }
-    }
+    await Promise.all(updatePromises);
 
     revalidatePath("/bdc");
 
