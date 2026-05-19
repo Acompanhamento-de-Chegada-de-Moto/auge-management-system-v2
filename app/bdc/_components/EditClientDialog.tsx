@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistrationStatus } from "@/generated/prisma/enums";
+import { notify } from "@/lib/notify";
 import { updateClient } from "../actions";
 
 type Props = {
@@ -55,6 +56,25 @@ function getRegistrationDateLabel(status: string): string {
     : "Data de Saída para Emplacamento";
 }
 
+function getArrivalStatusLabel(date: Date | undefined): {
+  text: string;
+  color: string;
+} {
+  if (!date) return { text: "Não definida", color: "text-muted-foreground" };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const arrival = new Date(date);
+  arrival.setHours(0, 0, 0, 0);
+
+  if (arrival <= today) {
+    return { text: "Chegou", color: "text-emerald-600" };
+  }
+
+  return { text: "Não chegou", color: "text-amber-600" };
+}
+
 export function EditClientDialog({ open, onOpenChange, row }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,6 +98,10 @@ export function EditClientDialog({ open, onOpenChange, row }: Props) {
       : undefined,
   );
 
+  const [arrivalDate, setArrivalDate] = useState<Date | undefined>(
+    row.arrivalDate ? new Date(row.arrivalDate) : undefined,
+  );
+
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -94,6 +118,8 @@ export function EditClientDialog({ open, onOpenChange, row }: Props) {
         ? new Date(row.registrationStatusDate)
         : undefined,
     );
+
+    setArrivalDate(row.arrivalDate ? new Date(row.arrivalDate) : undefined);
 
     setSubmitError(null);
   }, [row]);
@@ -127,17 +153,21 @@ export function EditClientDialog({ open, onOpenChange, row }: Props) {
             ? registrationStatusDate.toISOString().split("T")[0]
             : null
           : null,
+        arrivalDate: arrivalDate
+          ? arrivalDate.toISOString().split("T")[0]
+          : null,
       });
 
       if (result.status !== "success") {
-        setSubmitError(result.message);
+        notify.error(result.message || "Erro ao atualizar cliente");
         return;
       }
 
+      notify.success("Cliente atualizado com sucesso.");
       onOpenChange(false);
     } catch (err) {
       console.error(err);
-      setSubmitError("Erro ao atualizar cliente");
+      notify.error("Erro ao atualizar cliente");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,15 +222,16 @@ export function EditClientDialog({ open, onOpenChange, row }: Props) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label>Status de Chegada</Label>
-              <div className="flex h-12 items-center justify-between rounded-lg border px-3 text-sm">
-                <span className="text-emerald-600 font-medium">Chegou</span>
-                <span className="text-muted-foreground">
-                  {new Intl.DateTimeFormat("pt-BR").format(
-                    new Date(row.arrivalDate),
-                  )}
-                </span>
-              </div>
+              <Label>Data de Chegada</Label>
+              <DatePicker value={arrivalDate} onChange={setArrivalDate} />
+              {(() => {
+                const { text, color } = getArrivalStatusLabel(arrivalDate);
+                return (
+                  <span className={`text-xs font-medium ${color}`}>
+                    {text}
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="flex flex-col gap-2">

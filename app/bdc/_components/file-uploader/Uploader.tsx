@@ -4,8 +4,8 @@ import { Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/lib/notify";
-import { parseExcelFile } from "@/lib/upload-file";
-import { ImportMotorcycles } from "../../actions";
+import { parseExcelFile } from "@/lib/upload-clients";
+import { importClients } from "../../actions";
 
 export function Uploader() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,16 +25,16 @@ export function Uploader() {
       const result = await parseExcelFile(file);
 
       if (!result.success) {
-        notify.error(result.error || "Error processing spreadsheet.");
+        notify.error(result.error || "Erro ao processar planilha.");
         return;
       }
 
       if (!result.data) {
-        notify.error("No valid data found in spreadsheet.");
+        notify.error("Nenhum dado válido encontrado na planilha.");
         return;
       }
 
-      const response = await ImportMotorcycles(result.data);
+      const response = await importClients(result.data);
 
       if (response.status === "error") {
         notify.error(response.message);
@@ -44,7 +44,7 @@ export function Uploader() {
       notify.success(response.message);
     } catch (error) {
       console.error(error);
-      notify.error("Unexpected import error.");
+      notify.error("Erro inesperado ao importar.");
     } finally {
       setLoading(false);
       e.target.value = "";

@@ -17,18 +17,51 @@ export type BdcClientTableRow = {
   registrationStatusDate: Date | null;
 };
 
-export async function bdcGetClientRows(): Promise<BdcClientTableRow[]> {
+export async function bdcGetClientRows(
+  query?: string,
+  page = 1,
+  pageSize = 10,
+): Promise<{ rows: BdcClientTableRow[]; total: number; totalPages: number }> {
   await requireBdc();
 
-  const motorcycles = await prisma.motorcycle.findMany({
-    where: { clientId: { not: null } },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      client: true,
-    },
-  });
+  const safeQuery = query && query.length > 100 ? query.slice(0, 100) : query;
 
-  return motorcycles.map((m: any) => {
+  const where = {
+    clientId: { not: null },
+    ...(safeQuery && {
+      OR: [
+        {
+          chassis: {
+            contains: safeQuery,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          client: {
+            name: {
+              contains: safeQuery,
+              mode: "insensitive" as const,
+            },
+          },
+        },
+      ],
+    }),
+  };
+
+  const [motorcycles, total] = await Promise.all([
+    prisma.motorcycle.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        client: true,
+      },
+    }),
+    prisma.motorcycle.count({ where }),
+  ]);
+
+  const rows = motorcycles.map((m) => {
     const client = m.client;
     if (!client) {
       throw new Error("Invariant: motorcycle has clientId but no client");
@@ -48,12 +81,28 @@ export async function bdcGetClientRows(): Promise<BdcClientTableRow[]> {
       registrationStatusDate: m.registrationStatusDate,
     };
   });
+
+  return {
+    rows,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
+
+export type PublicClientStatusRow = {
+  motorcycleId: string;
+  clientName: string;
+  model: string;
+  chassis: string;
+  arrivalDate: Date;
+  registrationStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  registrationStatusDate: Date | null;
+};
 
 export async function publicGetClientStatus(
   query: string,
-): Promise<BdcClientTableRow[]> {
-  if (!query || query.length < 3) {
+): Promise<PublicClientStatusRow[]> {
+  if (!query || query.length < 3 || query.length > 100) {
     return [];
   }
 
@@ -78,12 +127,17 @@ export async function publicGetClientStatus(
       ],
     },
     orderBy: { updatedAt: "desc" },
+    take: 50,
     include: {
-      client: true,
+      client: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 
-  return motorcycles.map((m: any) => {
+  return motorcycles.map((m) => {
     const client = m.client;
     if (!client) {
       throw new Error("Invariant: motorcycle has clientId but no client");
@@ -91,13 +145,9 @@ export async function publicGetClientStatus(
 
     return {
       motorcycleId: m.id,
-      clientId: client.id,
       clientName: client.name,
-      sellerName: client.sellerName,
-      city: client.city,
       model: m.model,
       chassis: maskChassis(m.chassis),
-      billingDate: client.billingDate,
       arrivalDate: m.arrivalDate,
       registrationStatus: m.registrationStatus,
       registrationStatusDate: m.registrationStatusDate,

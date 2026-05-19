@@ -1,4 +1,4 @@
-import { bdcGetClientRows } from "@/app/data/bdc/bdc-get-client-rows";
+import { bdcGetClientRows, type BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -19,7 +19,7 @@ function registrationBadge(status: RegistrationStatus) {
     case RegistrationStatus.IN_PROGRESS:
       return <StatusBadge variant="warning">Em emplacamento</StatusBadge>;
     case RegistrationStatus.COMPLETED:
-      return <StatusBadge variant="success">Concluído</StatusBadge>;
+      return <StatusBadge variant="success">Emplacado</StatusBadge>;
     default:
       return <StatusBadge variant="neutral">Pendente</StatusBadge>;
   }
@@ -36,8 +36,14 @@ function hasArrived(arrivalDate: Date) {
   return arrival <= today;
 }
 
-export async function ClientsTable() {
-  const rows = await bdcGetClientRows();
+interface Props {
+  query?: string;
+  page: number;
+  pageSize: number;
+}
+
+export async function ClientsTable({ query, page, pageSize }: Props) {
+  const { rows } = await bdcGetClientRows(query, page, pageSize);
 
   return (
     <Card className="rounded-lg border border-border shadow-sm">

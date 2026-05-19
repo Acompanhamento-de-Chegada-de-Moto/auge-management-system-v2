@@ -1,8 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Pen } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Controller, type Resolver, useForm } from "react-hook-form";
 import { DatePicker } from "@/components/layout/DatePicker";
@@ -22,27 +21,49 @@ import {
   type MotorcycleArrivalSchema,
   motorcycleArrivalSchema,
 } from "@/validators/motorcycleArrivalSchema";
-import { RegisterMotorcycleArrival } from "../actions";
+import { EditMotorcycle, GetMotorcycleByChassis } from "../actions";
 
-export function RegisterMotorcycleArrivalDialog() {
+export function EditMotorcycleArrivalDialog({ chassis }: { chassis: string }) {
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-
-  function handleOpenDialog() {
-    setIsOpen((prev) => !prev);
-  }
+  const [loadingMotorcycle, setLoadingMotorcycle] = useState(false);
 
   const form = useForm<MotorcycleArrivalSchema>({
     resolver: zodResolver(
       motorcycleArrivalSchema,
     ) as Resolver<MotorcycleArrivalSchema>,
+    defaultValues: { chassis: "", model: "", arrivalDate: new Date() },
   });
+
+  async function handleOpenDialog() {
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+
+    setLoadingMotorcycle(true);
+
+    const { data, error } = await tryCatch(GetMotorcycleByChassis(chassis));
+
+    setLoadingMotorcycle(false);
+
+    if (error || data?.status !== "success") {
+      return;
+    }
+
+    form.reset({
+      chassis: data.data.chassis,
+      model: data.data.model,
+      arrivalDate: new Date(data.data.arrivalDate),
+    });
+
+    setIsOpen(true);
+  }
 
   function onSubmit(values: MotorcycleArrivalSchema) {
     startTransition(async () => {
       const { data: result, error } = await tryCatch(
-        RegisterMotorcycleArrival(values),
+        EditMotorcycle(chassis, values),
       );
 
       if (error) {
@@ -58,20 +79,22 @@ export function RegisterMotorcycleArrivalDialog() {
 
   return (
     <>
-      <Button size="sm" className="cursor-pointer" onClick={handleOpenDialog}>
-        <Plus className="size-4 mr-2" />
-        Registrar Chegada
+      <Button
+        size="icon"
+        className="cursor-pointer"
+        variant="ghost"
+        onClick={handleOpenDialog}
+      >
+        <Pen />
       </Button>
-
       <Dialog open={isOpen} onOpenChange={handleOpenDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar Chegada de Moto</DialogTitle>
+            <DialogTitle>Editar Chegada de Moto</DialogTitle>
             <DialogDescription>
-              Informe os dados da moto que chegou na concessionaria
+              Edite os dados da moto que chegou na concessionaria
             </DialogDescription>
           </DialogHeader>
-
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
@@ -94,6 +117,7 @@ export function RegisterMotorcycleArrivalDialog() {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="arrivalDate">Data de Chegada</Label>
+
                 <Controller
                   control={form.control}
                   name="arrivalDate"
@@ -108,18 +132,17 @@ export function RegisterMotorcycleArrivalDialog() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleOpenDialog}
                 className="cursor-pointer"
+                onClick={handleOpenDialog}
               >
                 Cancelar
               </Button>
-
               <Button
                 type="submit"
                 disabled={pending}
                 className="cursor-pointer"
               >
-                Registrar
+                Salvar alterações
               </Button>
             </DialogFooter>
           </form>

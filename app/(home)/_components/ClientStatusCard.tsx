@@ -1,17 +1,10 @@
-import {
-  Calendar,
-  ClipboardCheck,
-  FileText,
-  MapPin,
-  Truck,
-  User,
-} from "lucide-react";
+import { ClipboardCheck, FileText, Truck } from "lucide-react";
 import { StatusBadge } from "@/app/bdc/_components/StatusBadge";
-import type { BdcClientTableRow } from "@/app/data/bdc/bdc-get-client-rows";
+import type { PublicClientStatusRow } from "@/app/data/bdc/bdc-get-client-rows";
 import { Card, CardContent } from "@/components/ui/card";
 import { RegistrationStatus } from "@/generated/prisma/enums";
 
-export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
+export function ClientStatusCard({ row }: { row: PublicClientStatusRow }) {
   const formatDate = (date?: Date | string | null) =>
     date
       ? new Intl.DateTimeFormat("pt-BR", {
@@ -22,7 +15,6 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
       : "—";
 
   const arrivalDateFormatted = formatDate(row.arrivalDate);
-  const billingDateFormatted = formatDate(row.billingDate);
 
   const getStatusLabel = (status: RegistrationStatus) =>
     (
@@ -62,24 +54,9 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
             <div className="flex items-center gap-2 text-sm text-zinc-600">
-              <User className="h-4 w-4 text-zinc-400" />
-              <span className="font-medium">Vendedor:</span>
-              <span>{row.sellerName}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-zinc-600">
-              <MapPin className="h-4 w-4 text-zinc-400" />
-              <span className="font-medium">Cidade:</span>
-              <span>{row.city}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-zinc-600">
               <FileText className="h-4 w-4 text-zinc-400" />
               <span className="font-medium">Chassi:</span>
               <span className="font-mono text-xs">{row.chassis}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-zinc-600">
-              <Calendar className="h-4 w-4 text-zinc-400" />
-              <span className="font-medium">Faturamento:</span>
-              <span>{billingDateFormatted}</span>
             </div>
           </div>
         </div>
@@ -100,7 +77,7 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex text-nowrap items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-zinc-400" />
               <span className="text-sm font-medium text-zinc-600">
                 Situação:
@@ -109,7 +86,6 @@ export function ClientStatusCard({ row }: { row: BdcClientTableRow }) {
                 {getStatusLabel(row.registrationStatus)}
               </StatusBadge>
             </div>
-            {/* Note: Logic for "Saiu para emplacamento em" would go here if we had the date */}
             <p className="text-xs text-zinc-500 pl-6">
               Status atualizado recentemente
             </p>

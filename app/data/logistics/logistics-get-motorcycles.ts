@@ -9,7 +9,7 @@ export async function logisticsGetMotorcycles(page = 1, pageSize = 10) {
   const [data, total] = await Promise.all([
     prisma.motorcycle.findMany({
       orderBy: {
-        createdAt: "desc",
+        updatedAt: "desc",
       },
       skip: (page - 1) * pageSize,
       take: pageSize,
