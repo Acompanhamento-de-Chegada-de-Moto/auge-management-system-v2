@@ -496,95 +496,44 @@ export async function importClients(
       };
     }
 
-    // Processa em lotes pequenos para evitar timeout no Neon (serverless PostgreSQL).
-    // Se um lote falhar, tenta item por item para salvar o máximo possível.
-    const BATCH_SIZE = 20;
+    // Sem transação: cada operação é autocommit, muito mais rápido no Neon.
     let importedCount = 0;
     let failedCount = 0;
 
-    for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
-      const batch = validRows.slice(i, i + BATCH_SIZE);
-      let batchSuccess = false;
-
-      try {
-        await prisma.$transaction(
-          async (tx) => {
-            for (const row of batch) {
-              const motorcycleId = motorcycleIdByChassis.get(row.chassis);
-              if (!motorcycleId) continue;
-
-              const client = await tx.client.create({
-                data: {
-                  name: row.client,
-                  sellerName: row.sellersName,
-                  city: row.city,
-                  billingDate: parseOptionalDate(row.billingDate),
-                },
-              });
-
-              const status = row.registrationStatus ?? RegistrationStatus.PENDING;
-
-              await tx.motorcycle.update({
-                where: { id: motorcycleId },
-                data: {
-                  clientId: client.id,
-                  model: row.model,
-                  registrationStatus: status,
-                  registrationStatusDate: shouldTrackRegistrationDate(status)
-                    ? parseOptionalDate(row.registrationStatusDate)
-                    : null,
-                },
-              });
-            }
-          },
-          { timeout: 120_000, maxWait: 15_000 },
-        );
-
-        importedCount += batch.length;
-        batchSuccess = true;
-      } catch {
-        // Se o lote falhou, tenta um a um
+    for (const row of validRows) {
+      const motorcycleId = motorcycleIdByChassis.get(row.chassis);
+      if (!motorcycleId) {
+        failedCount++;
+        continue;
       }
 
-      if (!batchSuccess) {
-        for (const row of batch) {
-          const motorcycleId = motorcycleIdByChassis.get(row.chassis);
-          if (!motorcycleId) continue;
+      try {
+        const client = await prisma.client.create({
+          data: {
+            name: row.client,
+            sellerName: row.sellersName,
+            city: row.city,
+            billingDate: parseOptionalDate(row.billingDate),
+          },
+        });
 
-          try {
-            await prisma.$transaction(
-              async (tx) => {
-                const client = await tx.client.create({
-                  data: {
-                    name: row.client,
-                    sellerName: row.sellersName,
-                    city: row.city,
-                    billingDate: parseOptionalDate(row.billingDate),
-                  },
-                });
+        const status = row.registrationStatus ?? RegistrationStatus.PENDING;
 
-                const status = row.registrationStatus ?? RegistrationStatus.PENDING;
+        await prisma.motorcycle.update({
+          where: { id: motorcycleId },
+          data: {
+            clientId: client.id,
+            model: row.model,
+            registrationStatus: status,
+            registrationStatusDate: shouldTrackRegistrationDate(status)
+              ? parseOptionalDate(row.registrationStatusDate)
+              : null,
+          },
+        });
 
-                await tx.motorcycle.update({
-                  where: { id: motorcycleId },
-                  data: {
-                    clientId: client.id,
-                    model: row.model,
-                    registrationStatus: status,
-                    registrationStatusDate: shouldTrackRegistrationDate(status)
-                      ? parseOptionalDate(row.registrationStatusDate)
-                      : null,
-                  },
-                });
-              },
-              { timeout: 30_000, maxWait: 5_000 },
-            );
-
-            importedCount++;
-          } catch {
-            failedCount++;
-          }
-        }
+        importedCount++;
+      } catch {
+        failedCount++;
       }
     }
 
